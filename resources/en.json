@@ -1,0 +1,43 @@
+{
+    "title": "Canada Labour Research Assistant",
+    "sidebar": {
+        "advanced_settings": "Advanced settings",
+        "language": "Language",
+        "title": "Options",
+        "remote_mode": "Remote mode",
+        "remote_mode_tooltip": "*WARNING: Your privacy is not guaranteed in 'remote mode' since this calls an API from a third party provider instead of using local resources.*",
+        "previous_questions": "Conversation history length",
+        "previous_questions_tooltip": "*For example, 3 = three past conversation turns. Includes documents and metadata.*",
+        "direct_quotations": "Direct quotations",   
+        "model_prompt": "Model used",
+        "db_name": "Database",
+        "sources_prompt": "Sources retrieved",
+        "sources_prompt_tooltip": "*A source is a chunk of document related to the query.*",
+        "system_prompt": "## Custom instructions as a system prompt",
+        "system_prompt_placeholder": "Enter your own instructions here for the research assistant to behave in a specific way. \n\nFor example, you may want only two paragraphs or want a specific writing style (e.g. a briefing note), etc.",
+        "reset_button": "Reset session",
+        "reset_help": "New conversation"
+    },
+    "about": {
+        "title": "About the Canada Labour Research Assistant (CLaRA)",
+        "welcome": "Welcome to the Canada Labour Research Assistant. You can use this tool to ask questions about anything related to labour standards, occupational health and safety, workers' compensation, etc.",
+        "note": "Please note that it is *not* designed for casual conversation but rather to assist you in your research.",
+        "documents_tab": "The **documents** tab provides direct access to the sources used by the assistant in responding to your questions. Some of the formatting may be unintelligible as a result of the file conversions.",
+        "metadata_tab": "The **metadata** tab provides you with direct access to the hyperlinks of the sources so you can access them in their original context as web pages.",
+        "TOS": "If you use this assistant in 'remote mode', your data and/or any confidential information you include in your queries will **not be protected**."
+    },
+    "tabs": {
+        "response": "Response",
+        "documents": "Documents",
+        "metadata": "Metadata",
+        "previous_documents": "Previous documents",
+        "previous_metadata": "Previous metadata"
+    },
+    "databases": {
+        "labour": "Labour",
+        "equity": "Equity"
+    },
+    "processing": "Processing query...",
+    "download": "Download Response",
+    "chat_input": "Please type your question here..."
+} 
