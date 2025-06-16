@@ -1,0 +1,165 @@
+.matched-segment {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  overflow: hidden;
+  line-height: 1;
+  text-decoration: none !important;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.matched-segment-text{
+  color: white;
+}
+
+.matched-segment-tex:visited {
+  color: white;
+}
+
+.matched-segment-id {
+  color: white;
+}
+
+.matched-segment-id:visited {
+  color: white;
+}
+
+/* Add new segment type classes */
+.matched-segment.segment-clc {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+.matched-segment.segment-clsr {
+  background: rgba(251, 146, 60, 0.4);
+}
+
+.matched-segment.segment-ipg {
+  background: rgba(33, 195, 84, 0.4);
+}
+
+.matched-segment.segment-default {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+/* Hover states for each type */
+.matched-segment.segment-clc:hover {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+.matched-segment.segment-clsr:hover {
+  background: rgba(251, 146, 60, 0.5);
+}
+
+.matched-segment.segment-ipg:hover {
+  background: rgba(33, 195, 84, 0.5);
+}
+
+.matched-segment.segment-default:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Active states for each type */
+.matched-segment.segment-clc:active {
+  background: rgba(239, 68, 68, 0.6);
+  transform: scale(0.98);
+}
+
+.matched-segment.segment-clsr:active {
+  background: rgba(251, 146, 60, 0.6);
+  transform: scale(0.98);
+}
+
+.matched-segment.segment-ipg:active {
+  background: rgba(33, 195, 84, 0.6);
+  transform: scale(0.98);
+}
+
+.matched-segment.segment-default:active {
+  background: rgba(59, 130, 246, 0.6);
+  transform: scale(0.98);
+}
+
+.matched-segment-divider {
+  border-top: 1px solid;
+  opacity: 0.1;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.matched-segment-id {
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
+details{
+  background-color: #172D43;
+  color: rgb(199, 235, 255)
+}
+
+details summary div{
+  font-size: 16px !important;
+}
+
+[data-testid="stChatMessageAvatarAssistant"] {
+  display: none !important;
+}
+
+/* Add these rules to fix scroll behavior during text generation */
+html, body {
+  overscroll-behavior: none; /* Prevents scroll chaining and bouncing effects */
+}
+
+.stContainer, .stVerticalBlock, .stTextArea {
+  overscroll-behavior: contain; /* Contains scrolling within elements */
+}
+
+.element-container {
+  overflow-anchor: none; /* Prevents scroll anchoring during content changes */
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+[data-testid="stVerticalBlock"] {
+  overflow: visible !important;
+}
+
+[data-testid="stText"], [data-testid="stMarkdown"] {
+  overflow-anchor: none;
+}
+
+.element-container, .stText, .stMarkdown {
+  overflow-anchor: none !important;
+  overscroll-behavior: auto;
+}
+
+.stStreamlitApp, .stApp {
+  overscroll-behavior: none;
+}
+
+div[data-testid="stVerticalBlock"] {
+  overflow: visible !important;
+  overscroll-behavior: contain;
+}
+
+div[data-testid="stText"] p {
+  overflow-anchor: none;
+}
+
+@supports (overflow-anchor: auto) {
+  * {
+    overflow-anchor: none;
+  }
+  
+  html, body {
+    overflow-anchor: none;
+    overscroll-behavior: none;
+  }
+}

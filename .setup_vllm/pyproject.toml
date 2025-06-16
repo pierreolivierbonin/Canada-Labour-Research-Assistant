@@ -1,0 +1,37 @@
+[build-system]
+requires = ['setuptools >= 61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'CLaRA_v1'
+dynamic = ['version']
+authors = [{name='Pierre-Olivier Bonin'},
+           {name='Marc-André Allard'}]
+description = 'RAG-powered AI Research Assistant leveraging a ChromaDB vector database, a Streamlit frontend and a vLLM backend.'
+readme = 'README.md'
+requires-python = '== 3.12.*'
+dependencies = [
+    'beautifulsoup4==4.13.4',
+    'chromadb==1.0.12',
+    'flashinfer-python==0.2.5',
+    'llmcompressor==0.5.1',
+    'nltk==3.9.1',
+    'ollama==0.5.1',
+    'protobuf==3.20.3',
+    'pymupdf4llm==0.0.24',
+    'sentence-transformers==4.1.0',
+    'streamlit==1.45.1',
+    # vllm will install torch, and it will detect CUDA on its own. CUDA drivers compatibility is a bit finnicky; consult https://docs.flashinfer.ai/installation.html
+    "vllm==0.9.0.1",
+    ]
+
+[tool.setuptools.packages.find]
+where = ["../src/"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true

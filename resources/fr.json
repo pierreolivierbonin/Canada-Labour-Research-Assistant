@@ -1,0 +1,43 @@
+{
+    "title": "Assistant de recherche sur le travail au Canada",
+    "sidebar": {
+        "advanced_settings": "Paramètres avancés",
+        "language": "Langue",
+        "title": "Options",
+        "remote_mode": "Mode à distance",
+        "remote_mode_tooltip": "*Ceci appelle une API d'un fournisseur externe au lieu d'utiliser les ressources locales.*",
+        "previous_questions": "Longueur de l'historique de conversation",
+        "previous_questions_tooltip": "*Par exemple, 3=trois questions posées. Inclut les documents et métadonnées.*",
+        "direct_quotations": "Citations directes",
+        "model_prompt": "Modèle utilisé",
+        "db_name": "Base de données",
+        "sources_prompt": "Sources récupérées",
+        "sources_prompt_tooltip": "*Une source est un morceau de document lié à la requête.*",
+        "system_prompt": "Directives personnalisées pour le système",
+        "system_prompt_placeholder": "Saisissez ici vos propres instructions pour que l'assistant de recherche se comporte d'une manière spécifique. \n\nPar exemple, vous pourriez vouloir seulement deux paragraphes, un style d'écriture spécifique (par exemple, une note d'information), etc.",
+        "reset_button": "Réinitialiser la session",
+        "reset_help": "Nouvelle conversation"
+    },
+    "about": {
+        "title": "À propos de l'assistant de recherche sur le travail au Canada (CLaRA)",
+        "welcome": "Bienvenue à l'assistant de recherche sur le travail au Canada. Vous pouvez utiliser cet outil pour poser des questions sur tout ce qui concerne les normes du travail, la santé et la sécurité au travail, l'indemnisation des travailleurs, etc.",
+        "note": "Veuillez noter que cet outil n'est pas conçu pour une conversation informelle, mais plutôt pour vous aider dans vos recherches.",
+        "documents_tab": "L'onglet **documents** permet d'accéder directement aux sources utilisées par l'assistant pour répondre à vos questions. Il est possible que le formatage soit parfois inintelligible compte tenu de la conversion de certains fichiers.",
+        "metadata_tab": "L'onglet **métadonnées** vous permet d'accéder directement aux liens hypertextes des sources afin que vous puissiez les consulter dans leur contexte d'origine en tant que pages web.",
+        "TOS": "Si vous décidez d'utiliser le mode 'à distance', vos données et/ou les informations confidentielles qui pourraient apparaître dans vos requêtes **ne seront pas protégées**."
+    },
+    "tabs": {
+        "response": "Réponse",
+        "documents": "Documents",
+        "metadata": "Métadonnées",
+        "previous_documents": "Documents précédents",
+        "previous_metadata": "Métadonnées précédentes"
+    },
+    "databases": {
+        "labour": "Travail",
+        "equity": "Équité"
+    },
+    "processing": "Traitement de la requête...",
+    "download": "Télécharger la réponse",
+    "chat_input": "Veuillez saisir votre question ici..."
+} 

@@ -1,0 +1,38 @@
+[build-system]
+requires = ['setuptools >= 61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'CLaRA_v1'
+dynamic = ['version']
+authors = [{name='Pierre-Olivier Bonin'},
+           {name='Marc-André Allard'}]
+description = 'RAG-powered AI Research Assistant leveraging a ChromaDB vector database, a Streamlit frontend and an Ollama backend.'
+readme = 'README.md'
+requires-python = '== 3.12.*'
+dependencies = [
+    'beautifulsoup4==4.13.4',
+    'chromadb==1.0.12',
+    'nltk==3.9.1',
+    'ollama==0.4.2',
+    'protobuf==3.20.3',
+    'pymupdf4llm==0.0.24',
+    'sentencepiece==0.2.0',
+    'sentence-transformers==3.0.1',
+    'streamlit==1.45.1',
+    'summac==0.0.4',
+    'transformers>=4.8.1',
+    # adapt the version you need according to your available compute resources
+    "torch==2.6.0+cu124",
+    ]
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true

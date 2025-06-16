@@ -1,0 +1,44 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Canada Labour Research Agent (CLaRA)
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Pierre-Olivier
+    family-names: Bonin
+  - given-names: Marc-André
+    family-names: Allard
+repository-code: >-
+  https://github.com/pierreolivierbonin/Canada-Labour-Research-Assistant
+abstract: >-
+  The Canada Labour Research Assistant (CLaRA) is an
+  LLM-powered research assistant that can directly quote
+  sources using retrieval-augmented generation to answer
+  questions about a wide range of topics related to Canadian
+  labour laws, standards, and regulations. All made with
+  open-source software.
+keywords:
+  - direct quotations
+  - question-answering
+  - labour
+  - lcs-algorithm
+  - streamlit
+  - sentence-transformers
+  - chromadb
+  - llm
+  - llm inference
+  - local llm
+  - llm-serving
+  - retrieval-augmented generation
+  - ollama
+  - string-matching
+  - rag chatbot
+  - source referencing
+  - metadata
+license: MIT
+version: '1.0'
+date-released: '2025-05-08'

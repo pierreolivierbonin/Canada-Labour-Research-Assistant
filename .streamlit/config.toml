@@ -1,0 +1,13 @@
+[browser]
+gatherUsageStats = false
+
+[global]
+disableWidgetStateDuplicationWarning = true
+
+[logger]
+level = "info"
+
+[server]
+headless = false
+runOnSave = true
+
