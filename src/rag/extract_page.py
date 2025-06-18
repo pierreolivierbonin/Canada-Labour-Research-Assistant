@@ -204,4 +204,7 @@ if __name__ == "__main__":
         db_name = db["name"]
         save_html = db.get("save_html", False)
 
-        extract_pages_main(db["pages"], db_name, save_html, db.get("pages_blacklist"), selected_tokenizer, selected_token_limit)
+        pages = db.get("pages")
+
+        if pages:
+            extract_pages_main(pages, db_name, save_html, db.get("pages_blacklist"), selected_tokenizer, selected_token_limit)
