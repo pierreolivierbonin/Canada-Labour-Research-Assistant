@@ -86,7 +86,7 @@ class App:
                                 options=model_shortlist, 
                                 index=model_shortlist.index(default_model))
             
-            orig_db_list = list(VectorDBDataFiles.databases.keys())
+            orig_db_list = list([db["name"] for db in VectorDBDataFiles.databases])
             
             translated_db_list = [self.translator.get(f'databases.{db_name}') for db_name in orig_db_list]
             translated_db_name = self.translator.get(f'databases.{self.db_name}')
