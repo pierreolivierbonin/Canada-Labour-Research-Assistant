@@ -15,11 +15,10 @@ from urllib.parse import urljoin
 from dataclasses import dataclass
 import os
 
-from rag_utils.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text
-from rag_utils.db_config import EmbeddingModel, ModelsConfig, WebCrawlConfig
+from rag_utils.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text, get_base_url
 
 MAX_WORKERS = 10
-BASE_URL = "https://www.canada.ca"
+#BASE_URL = "https://www.canada.ca"
 
 PROCESSED_IPG_IDS = []
 
@@ -30,19 +29,20 @@ class IPG:
     id: str
     table_title: str
 
-def process_ipg_page(ipg: IPG, tokenizer, token_limit, current_language) -> Optional[Page]:
+def process_ipg_page(ipg: IPG, database_name, save_html, tokenizer, token_limit, current_language, base_url) -> Optional[Page]:
     try:
-        full_url = urljoin(BASE_URL, ipg.url)
+        full_url = urljoin(base_url, ipg.url)
         response = requests.get(full_url, timeout=10)
         response.raise_for_status()
         language_suffix = "_fr" if current_language != "en" else ""
-        
-        output_dir = f"outputs/ipgs_html{language_suffix}"
-        os.makedirs(output_dir, exist_ok=True)
-        filename = f"{output_dir}/{ipg.id}{language_suffix}.html"
-        
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(response.text)
+
+        if save_html:
+            output_dir = f"outputs/{database_name}/ipgs_html{language_suffix}"
+            os.makedirs(output_dir, exist_ok=True)
+            filename = f"{output_dir}/{ipg.id}{language_suffix}.html"
+            
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(response.text)
         
         soup = BeautifulSoup(response.content, 'html.parser')
         text, linked_pages = extract_main_content(soup)
@@ -116,23 +116,20 @@ def extract_ipgs_from_table(table) -> List[IPG]:
     
     return ipgs
 
-def main():
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
+def extract_ipgs_main(ipg_dict, database_name, save_html, selected_tokenizer, selected_token_limit):
+    # languages = ["en", "fr"]
 
-    selected_tokenizer = selected_model.model.tokenizer
-    selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding
-
-    languages = ["en", "fr"]
-
-    for language in languages:
+    for language in ipg_dict.keys():
         print(f"Processing IPGs in {language}...")
 
         global PROCESSED_IPG_IDS
         PROCESSED_IPG_IDS = []
+
+        url = ipg_dict[language]
+        base_url = get_base_url(url)
         
         # Fetch main IPG page
-        response = requests.get(WebCrawlConfig.ipg_url if language == "en" else WebCrawlConfig.ipg_url_fr)
+        response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
@@ -150,7 +147,7 @@ def main():
         processed_pages = []
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             future_to_ipg = {
-                executor.submit(process_ipg_page, ipg, selected_tokenizer, selected_token_limit, language): ipg 
+                executor.submit(process_ipg_page, ipg, database_name, save_html, selected_tokenizer, selected_token_limit, language, base_url): ipg 
                 for ipg in all_ipgs
             }
             
@@ -159,7 +156,7 @@ def main():
                 if page:
                     processed_pages.append(page)
         
-        save_to_csv(processed_pages, "ipgs", language)
+        save_to_csv(processed_pages, database_name, "ipgs", language)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

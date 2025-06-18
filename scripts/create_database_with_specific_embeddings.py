@@ -14,7 +14,7 @@ from rag_utils.db_config import EmbeddingModel, VectorDBDataFiles
 
 def main(collection_name:str,
          db_path:str,
-         data_files:dict,
+         data_files_tuples:list[tuple[str, bool]],
          model:EmbeddingModel,
          distance_func:str,
          current_language:str
@@ -140,8 +140,10 @@ def main(collection_name:str,
             metadatas=metadatas
         )
 
-    for _, file_info in data_files.items():
-        process_and_upsert_data(collection, *file_info)
+    # for _, file_info in db_dict.items():
+    #     process_and_upsert_data(collection, *file_info)
+    for file_path, has_section_nb in data_files_tuples:
+        process_and_upsert_data(collection, file_path, has_section_nb)
 
     # quick check if the output makes sense
     queries = [
@@ -211,8 +213,30 @@ if __name__ == "__main__":
 
     databases = VectorDBDataFiles.databases
 
-    for db_name, data_files in databases.items():
+    for db in databases:
+        db_name = db["name"]
         model_name = selected_model.model_name + "_" + db_name.lower()
+
+        root_path = f"outputs/{db_name}/"
+        data_files_tuples = []
+        
+        # Create data files tuples for each type of data file
+        db_ipg = db.get("ipg")
+        if db_ipg:
+            data_files_tuples.append((root_path + "ipgs", False))
+        
+        db_law = db.get("law")
+        if db_law:
+            for toc_type, _ in db_law[languages[0]]:
+                data_files_tuples.append((root_path + toc_type, True))
+
+        db_pages = db.get("pages")
+        if db_pages:
+            data_files_tuples.append((root_path + "pages", False))
+
+        db_pdfs = db.get("pdfs")
+        if db_pdfs:
+            data_files_tuples.append((root_path + "pdfs", False))
 
         for language in languages:
             collection_name = model_name + ("_fr" if language == "fr" else "")
@@ -222,7 +246,7 @@ if __name__ == "__main__":
 
             main(collection_name=collection_name,
                 db_path=ChromaDBSettings.directory_path,
-                data_files=data_files,
+                data_files_tuples=data_files_tuples,
                 model=selected_model,
                 distance_func="ip", # passed to chromadb's get_or_create_collection method, one of ["l2", "ip", "cosine"]
                 current_language=language
