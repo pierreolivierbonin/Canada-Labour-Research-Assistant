@@ -235,7 +235,7 @@ def truncate_if_above_max_length(text, max_length):
 # Post processing that should always be applied when markdown is used.
 def markdown_post_processing(text: str) -> str:
     # Replace the dollar signs to fix the markdown
-    return text.replace("$", "\$")
+    return text.replace("$", r"\$")
 
 def fix_links_and_emails(text):
     # Email pattern
