@@ -83,28 +83,28 @@ cd canada-labour-research-assistant
 ```
 
 #### All-in-one setup
-Run `full_install_and_launch_pipeline.sh`.
+Run `source ./setup/ollama_build/full_install_and_launch_pipeline.sh`.
 
 If you prefer to do it one step at a time:
 
 #### Step 1
 Install the virtual environment by running the following command in your bash terminal:
 ```sh
-./install_venv.sh
+source ./setup/ollama_build/install_venv.sh
 ```
 
 
 #### Step 2
 Make sure your virtual environment is activated. Then, create the database by running the following command in a terminal:
 ```sh
-./create_or_update_database.sh
+source ./setup/create_or_update_database.sh
 ```
 
 #### Step 3
 
 You are now ready to launch the application with: 
 ```sh
-./run_app_choose_mode.sh
+source ./run_app_ollama.sh
 ``` 
 
 You can now enter the mode of your choice in the console to run the application. 
@@ -135,14 +135,14 @@ If you intend to use LoRA adapters, install `jq` by running `sudo apt-get instal
 #### Step #1
 Install the virtual environment by running:
 ```sh
-source ./install_venv_vllm.sh
+source ./setup/vllm_build/install_venv_vllm.sh
 ```
 
 #### Step #2
 Activate your virtual environemnt with `source .venv/bin/activate`, then run:
 
 ```sh
-./create_or_update_database.sh
+source ./setup/create_or_update_database.sh
 ```
 
 #### Step #3
