@@ -90,21 +90,21 @@ If you prefer to do it one step at a time:
 #### Step 1
 Install the virtual environment by running the following command in your bash terminal:
 ```sh
-source ./setup/ollama_build/install_venv.sh
+./setup/ollama_build/install_venv.sh
 ```
 
 
 #### Step 2
 Make sure your virtual environment is activated. Then, create the database by running the following command in a terminal:
 ```sh
-source ./setup/create_or_update_database.sh
+./setup/create_or_update_database.sh
 ```
 
 #### Step 3
 
 You are now ready to launch the application with: 
 ```sh
-source ./run_app_ollama.sh
+./run_app_ollama.sh
 ``` 
 
 You can now enter the mode of your choice in the console to run the application. 
