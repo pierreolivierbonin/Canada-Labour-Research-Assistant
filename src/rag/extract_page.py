@@ -14,14 +14,10 @@ from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import os
 
-from rag_utils.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv
-from rag_utils.db_config import EmbeddingModel, ModelsConfig, WebCrawlConfig
+from rag.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv, get_base_url
 
 MAX_BATCH_SIZE = 10
-BASE_URL = "https://www.canada.ca"
-
 PROCESSED_LINKS = set()
-BLACKLIST_ROOT_URLS = set()
 USED_TITLES = set()
 
 def extract_hierarchy(soup) -> Tuple[List[str], List[str]]:
@@ -46,7 +42,7 @@ def extract_title(soup) -> str:
     return ""
 
 # Extract links from table of contents (Steps)
-def extract_toc_links(soup) -> List[str]:
+def extract_toc_links(soup, base_url) -> List[str]:
     toc = soup.find('ul', class_='toc')
     if not toc:
         return []
@@ -55,18 +51,22 @@ def extract_toc_links(soup) -> List[str]:
     for link in toc.find_all('a'):
         href = link.get('href')
         if href and href.startswith('/'):
-            links.append(f"{BASE_URL}{href}")
+            links.append(f"{base_url}{href}")
     return links
 
 # Save HTML content to a file in the outputs/canada_html directory using the page title
-def save_html_content(content: str, title: str, current_language: str):
+def save_html_content(content: str, title: str, current_language: str, database_name: str):
     language_suffix = "_fr" if current_language != "en" else ""
-    output_dir = os.path.join("outputs", "canada_html" + language_suffix)
+    output_dir = os.path.join("outputs", database_name, "pages_html" + language_suffix)
     os.makedirs(output_dir, exist_ok=True)
     
     # Clean the title for use as filename
     clean_title = title.strip().replace("/", "_").replace("\\", "_")
     clean_title = "".join(c for c in clean_title if c.isalnum() or c in "_ -")
+
+    # Truncate after 100 characters to avoid overly long filenames
+    if len(clean_title) > 100:
+        clean_title = clean_title[:100]
     
     # Handle duplicate titles
     if clean_title in USED_TITLES:
@@ -79,9 +79,10 @@ def save_html_content(content: str, title: str, current_language: str):
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
 
-def process_page(url: str, current_depth: int, tokenizer, token_limit: int, current_language: str, skip_toc: bool = False):
+def process_page(url: str, current_depth: int, tokenizer, token_limit: int, current_language: str, database_name: str, save_html: bool, blacklist_urls: List[str], skip_toc: bool = False):
     current_processed_pages = []
     print(f"Processing {url} at depth {current_depth}")
+    base_url = get_base_url(url)
     
     try:     
         response = requests.get(url, timeout=10)
@@ -91,18 +92,19 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
         title = extract_title(soup)
         
         # Check for table of contents if not skipping
-        # Save HTML content with title
-        save_html_content(response.text, title, current_language)
+        if save_html:
+            # Save HTML content with title
+            save_html_content(response.text, title, current_language, database_name)
         
         # Check for table of contents if not skipping
         if not skip_toc:
-            toc_links = extract_toc_links(soup)
+            toc_links = extract_toc_links(soup, base_url)
             if toc_links:
                 print(f"Found table of contents in {url}, processing sub-pages...")
                 for full_url in toc_links:
                     if full_url not in PROCESSED_LINKS:
                         PROCESSED_LINKS.add(full_url) # Mark as processed
-                        processed_pages = process_page(full_url, current_depth, tokenizer, token_limit, current_language, skip_toc=True)
+                        processed_pages = process_page(full_url, current_depth, tokenizer, token_limit, current_language, database_name, save_html, blacklist_urls, skip_toc=True)
                         current_processed_pages.extend(processed_pages)
                 return current_processed_pages
         
@@ -112,6 +114,10 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
 
         # Extract main content
         text, linked_pages = extract_main_content(soup)
+
+        if not text:
+            print(f"Warning: No text found for {url}, skipping chunking")
+            return current_processed_pages
         
         # Chunk the text
         chunks = chunk_text(text, tokenizer, token_limit)
@@ -126,8 +132,8 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
                 
             # Mark all links as processed before starting
             for link in linked_pages:
-                full_url = f"{BASE_URL}{link}"
-                if full_url not in PROCESSED_LINKS and not any(link.startswith(root_url) for root_url in BLACKLIST_ROOT_URLS):
+                full_url = f"{base_url}{link}"
+                if full_url not in PROCESSED_LINKS and not any(link.startswith(root_url) for root_url in blacklist_urls):
                     PROCESSED_LINKS.add(full_url)
                     sub_links_to_process.append(full_url)
             
@@ -135,7 +141,7 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
             if current_depth == 0:
                 # Process in batches of 10
                 with ThreadPoolExecutor(max_workers=MAX_BATCH_SIZE) as executor:
-                    futures = [executor.submit(process_page, url, current_depth + 1, tokenizer, token_limit, current_language) for url in sub_links_to_process]
+                    futures = [executor.submit(process_page, url, current_depth + 1, tokenizer, token_limit, current_language, database_name, save_html, blacklist_urls) for url in sub_links_to_process]
 
                     # Wait for batch completion and add results in order
                     # for future in sorted(futures.keys(), key=lambda f: futures[f]):
@@ -146,7 +152,7 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
             else:
                 # Process sequentially for depth > 0
                 for link in sub_links_to_process:
-                    processed_pages = process_page(link, current_depth + 1, tokenizer, token_limit, current_language)
+                    processed_pages = process_page(link, current_depth + 1, tokenizer, token_limit, current_language, database_name, save_html, blacklist_urls)
                     current_processed_pages.extend(processed_pages)
 
     except Exception as e:
@@ -154,29 +160,26 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
 
     return current_processed_pages
 
-if __name__ == "__main__":
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
+def extract_pages_main(pages_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int, save_html:bool, blacklist_dict:dict):
+    global PROCESSED_LINKS
 
-    selected_tokenizer = selected_model.model.tokenizer
-    selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding
+    for language in pages_dict:
+        print(f"Processing pages in {language}...")
 
-    languages = ["en", "fr"]
-
-    for language in languages:
-        print(f"Processing Canada pages in {language}...")
-
-        pages_to_process = WebCrawlConfig.canada_pages_ids_and_urls if language == "en" else WebCrawlConfig.canada_pages_ids_and_urls_fr
+        #pages_to_process = WebCrawlConfig.canada_pages_ids_and_urls if language == "en" else WebCrawlConfig.canada_pages_ids_and_urls_fr
+        pages_to_process = pages_dict[language]
         
         # Initialize PROCESSED_LINKS with starting pages
         PROCESSED_LINKS = set(pages_to_process)
 
-        BLACKLIST_ROOT_URLS = set(WebCrawlConfig.canada_pages_blacklist_urls if language == "en" else WebCrawlConfig.canada_pages_blacklist_urls_fr)
+        # BLACKLIST_ROOT_URLS = set(WebCrawlConfig.canada_pages_blacklist_urls if language == "en" else WebCrawlConfig.canada_pages_blacklist_urls_fr)
+        blacklist_urls = blacklist_dict[language] if blacklist_dict else []
+        #BLACKLIST_ROOT_URLS = set(blacklist_urls)
 
         all_processed_pages = []
         
         for id_prefix, page_url in pages_to_process:
-            processed_pages = process_page(page_url, 0, selected_tokenizer, selected_token_limit, language)
+            processed_pages = process_page(page_url, 0, selected_tokenizer, selected_token_limit, language, database_name, save_html, blacklist_urls)
 
             # Set the id for each page (Otherwise, might not be in order due to parallel processing)
             for idx, page in enumerate(processed_pages):
@@ -184,4 +187,21 @@ if __name__ == "__main__":
 
             all_processed_pages.extend(processed_pages)
 
-        save_to_csv(all_processed_pages, "pages", language)
+        save_to_csv(all_processed_pages, database_name, "page", language)
+
+if __name__ == "__main__":
+    from db_config import VectorDBDataFiles
+    from rag.extract_page import extract_pages_main
+    from rag.page_utils import get_tokenizer_and_limit
+
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
+    databases = VectorDBDataFiles.databases
+
+    for db in databases:
+        db_name = db["name"]
+        save_html = db.get("save_html", False)
+
+        pages = db.get("page")
+
+        if pages:
+            extract_pages_main(pages, db_name, selected_tokenizer, selected_token_limit, save_html, db.get("page_blacklist"))

@@ -1,8 +1,7 @@
 import pymupdf4llm
 import re
 import os
-from rag_utils.page_utils import Page, chunk_text, save_to_csv
-from rag_utils.db_config import EmbeddingModel, ModelsConfig, WebCrawlConfig
+from rag.page_utils import Page, chunk_text, save_to_csv
 import requests
 
 def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_limit):
@@ -90,23 +89,16 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
 
     return page
 
-def main():
-    # Initialize the model and tokenizer
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
-    selected_tokenizer = selected_model.model.tokenizer
-    selected_token_limit = selected_tokenizer.model_max_length - 45
-
+def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int):
     root_folder_path = "inputs"
 
     # Create the inputs folder if it doesn't exist (1 liner)
     os.makedirs(root_folder_path, exist_ok=True)
-    
-    languages = ["en", "fr"]
-    
-    for language in languages:
+
+    for language in pdf_dict.keys():
         # Get the pdf urls from the db_config
-        pdf_urls = WebCrawlConfig.pdf_urls_fr if language == "fr" else WebCrawlConfig.pdf_urls
+        #pdf_urls = WebCrawlConfig.pdf_urls_fr if language == "fr" else WebCrawlConfig.pdf_urls
+        pdf_urls = pdf_dict[language]
         pages = []
 
         folder_path = os.path.join(root_folder_path, language)
@@ -132,7 +124,19 @@ def main():
             pages.append(page)
 
         # Save to CSV
-        save_to_csv(pages, "pdfs", language, is_pdf=True)
+        save_to_csv(pages, database_name, "pdf", language, is_pdf=True)
 
 if __name__ == "__main__":
-    main()
+    from db_config import VectorDBDataFiles
+    from rag.extract_pdf import extract_pdfs_main
+    from rag.page_utils import get_tokenizer_and_limit
+
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
+    databases = VectorDBDataFiles.databases
+
+    for db in databases:
+        db_name = db["name"]
+        pdfs = db.get("pdf")
+
+        if pdfs:
+            extract_pdfs_main(pdfs, db_name, selected_tokenizer, selected_token_limit)

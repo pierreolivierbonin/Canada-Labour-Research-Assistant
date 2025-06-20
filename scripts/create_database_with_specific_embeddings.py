@@ -10,11 +10,11 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Add the parent directory to sys.path
 from config import ChromaDBSettings
-from rag_utils.db_config import EmbeddingModel, VectorDBDataFiles
+from db_config import EmbeddingModel, VectorDBDataFiles
 
 def main(collection_name:str,
          db_path:str,
-         data_files:dict,
+         data_files_tuples:list[tuple[str, bool]],
          model:EmbeddingModel,
          distance_func:str,
          current_language:str
@@ -140,8 +140,8 @@ def main(collection_name:str,
             metadatas=metadatas
         )
 
-    for _, file_info in data_files.items():
-        process_and_upsert_data(collection, *file_info)
+    for file_path, has_section_nb in data_files_tuples:
+        process_and_upsert_data(collection, file_path, has_section_nb)
 
     # quick check if the output makes sense
     queries = [
@@ -199,20 +199,55 @@ def main(collection_name:str,
                         distance_func])
             print("Collection name and specs saved to list of collections in './collections.json'")
 
+def get_error_message_for_mismatch_in_languages(db_name, data_type):
+    return f"Error: Mismatch in the number of languages for the {data_type} in db '{db_name}'"
 
 if __name__ == "__main__":
 
-    from rag_utils.db_config import EmbeddingModel, ModelsConfig
+    from db_config import EmbeddingModel, ModelsConfig
     
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
     selected_model.assign_model_and_attributes()
 
-    languages = ["en", "fr"]
-
     databases = VectorDBDataFiles.databases
 
-    for db_name, data_files in databases.items():
+    for db in databases:
+        db_name = db["name"]
+        languages = db.get("languages", ["en", "fr"])  # Default to both languages if not specified
         model_name = selected_model.model_name + "_" + db_name.lower()
+
+        root_path = f"outputs/{db_name}/"
+        data_files_tuples = []
+        
+        # Create data files tuples for each type of data file
+        db_ipg = db.get("ipg")
+        if db_ipg:
+            if len(languages) != len(db_ipg):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "IPGs"))
+            
+            data_files_tuples.append((root_path + "ipg", False))
+        
+        db_law = db.get("law")
+        if db_law:
+            if len(languages) != len(db_law):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "laws"))
+            
+            for toc_type, _ in db_law[languages[0]]:
+                data_files_tuples.append((root_path + toc_type, True))
+
+        db_pages = db.get("page")
+        if db_pages:
+            if len(languages) != len(db_pages):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "pages"))
+            
+            data_files_tuples.append((root_path + "page", False))
+
+        db_pdfs = db.get("pdf")
+        if db_pdfs:
+            if len(languages) != len(db_pdfs):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "pdfs"))
+            
+            data_files_tuples.append((root_path + "pdf", False))
 
         for language in languages:
             collection_name = model_name + ("_fr" if language == "fr" else "")
@@ -222,7 +257,7 @@ if __name__ == "__main__":
 
             main(collection_name=collection_name,
                 db_path=ChromaDBSettings.directory_path,
-                data_files=data_files,
+                data_files_tuples=data_files_tuples,
                 model=selected_model,
                 distance_func="ip", # passed to chromadb's get_or_create_collection method, one of ["l2", "ip", "cosine"]
                 current_language=language
