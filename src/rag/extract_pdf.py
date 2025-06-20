@@ -89,7 +89,7 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
 
     return page
 
-def extract_pdfs_main(pdf_dict, database_name, selected_tokenizer, selected_token_limit):
+def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int):
     root_folder_path = "inputs"
 
     # Create the inputs folder if it doesn't exist (1 liner)
