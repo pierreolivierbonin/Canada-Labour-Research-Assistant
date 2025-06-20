@@ -15,7 +15,7 @@ dependencies = [
     'chromadb==1.0.12',
     'nltk==3.9.1',
     'ollama==0.4.2',
-    'protobuf==3.20.3',
+    'protobuf==4.25.8',
     'pymupdf4llm==0.0.24',
     'sentencepiece==0.2.0',
     'sentence-transformers==3.0.1',
