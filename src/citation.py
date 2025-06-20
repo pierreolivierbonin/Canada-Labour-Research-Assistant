@@ -431,7 +431,8 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
 
         # Remove prefixed markdown *, quotes "" and any parentheses that follow
             # Also matches markdown * exact quote (even though such quotes are not longer searched for, see re.findall above)
-        pattern = rf'-*\**\n?\s*(?:\*?\s*"{re.escape(quote)}"|\*\s*{re.escape(quote)})(\s*\([^)]*\)+)?\.?;?\**'
+            # Also, tries to match parenthesis that contains an inner parenthesis first (ex: (Section 204(1) of the CLC)), then fallback to the normal parenthesis if none are found
+        pattern = rf'-*\**\n?\s*(?:\*?\s*"{re.escape(quote)}"|\*\s*{re.escape(quote)})(\s*\([^)]*\([A-Za-z0-9 ]+\)[^)]*\)|\s*\([^)]*\))?\.?;?\**'
         modified_answer = re.sub(pattern, f'\n{replacement_text}{" " + attribution if attribution is not None else ""}', modified_answer)
         
     return modified_answer
@@ -446,7 +447,7 @@ if __name__ == "__main__":
 
     llm_answer = """
         According to Section 196 of the Canada Labour Code, 
-        **"Text: an employer shall, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the wages\nexcluding overtime pay, that the employee earned with the employer in the four-week period immediately preceding the week in which the general holiday occurs in."**
+        **"Text: an employer shall, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the wages\nexcluding overtime pay, that the employee earned with the employer in the four-week period immediately preceding the week in which the general holiday occurs in." (Section 196(1) of the CLC)**
     """
 
     start_time = time.time()
