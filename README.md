@@ -83,7 +83,7 @@ cd canada-labour-research-assistant
 ```
 
 #### All-in-one setup
-Run `source ./setup/ollama_build/full_install_and_launch_pipeline.sh`.
+Run `./setup/ollama_build/full_install_and_launch_pipeline.sh`.
 
 If you prefer to do it one step at a time:
 
