@@ -268,8 +268,6 @@ def process_toc_page(toc_url, database_name, file_name, tokenizer, token_limit, 
                     ])
 
 def extract_law_main(law_dict, database_name, selected_tokenizer, selected_token_limit):
-    # languages = ["en", "fr"]
-
     for language in law_dict.keys():
         print(f"Processing Law Code in {language}...")
         
@@ -277,7 +275,22 @@ def extract_law_main(law_dict, database_name, selected_tokenizer, selected_token
         documents = law_dict[language]
 
         # Create outputs directory if it doesn't exist
-        os.makedirs("outputs", exist_ok=True)
+        os.makedirs(f"outputs/{database_name}", exist_ok=True)
 
         for file_name, toc_url in documents:
             process_toc_page(toc_url, database_name, file_name, selected_tokenizer, selected_token_limit, language)
+
+if __name__ == "__main__":
+    from db_config import VectorDBDataFiles
+    from rag.page_utils import get_tokenizer_and_limit
+    from rag.extract_law import extract_law_main
+
+    databases = VectorDBDataFiles.databases
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
+
+    for db in databases:
+        db_name = db["name"]
+        laws = db.get("law")
+
+        if laws:
+            extract_law_main(laws, db_name, selected_tokenizer, selected_token_limit)

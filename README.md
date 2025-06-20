@@ -169,7 +169,7 @@ Once this setup completed, you will be able to switch to **remote mode** via the
 
 <!-- USAGE EXAMPLES -->
 ## Use Case and Portability
-You can use this solution for your own use case by changing the hyperlinks of the [WebCrawlConfig](./src/rag_utils/db_config.py). Then, you extract the text you need, and create a vector database for Retrieval-Augmented Generation. 
+You can use this solution for your own use case by changing the hyperlinks of the [WebCrawlConfig](./src/db_config.py). Then, you extract the text you need, and create a vector database for Retrieval-Augmented Generation. 
 
 The solution is designed so you can easily verify the information used by the LLM to construct its responses. To do so, 'direct quotations' mode will format and highlight relevant passages taken from the sources. You can click on these passages to directly go to the source and validate the information. 
 

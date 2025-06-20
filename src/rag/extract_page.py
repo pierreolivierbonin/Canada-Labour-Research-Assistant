@@ -14,11 +14,9 @@ from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import os
 
-from rag_utils.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv, get_base_url
+from rag.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv, get_base_url
 
 MAX_BATCH_SIZE = 10
-#BASE_URL = "https://www.canada.ca"
-
 PROCESSED_LINKS = set()
 USED_TITLES = set()
 
@@ -65,6 +63,10 @@ def save_html_content(content: str, title: str, current_language: str, database_
     # Clean the title for use as filename
     clean_title = title.strip().replace("/", "_").replace("\\", "_")
     clean_title = "".join(c for c in clean_title if c.isalnum() or c in "_ -")
+
+    # Truncate after 100 characters to avoid overly long filenames
+    if len(clean_title) > 100:
+        clean_title = clean_title[:100]
     
     # Handle duplicate titles
     if clean_title in USED_TITLES:
@@ -158,9 +160,7 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
 
     return current_processed_pages
 
-def extract_pages_main(pages_dict, database_name, save_html, blacklist_dict, selected_tokenizer, selected_token_limit):
-    #languages = ["en", "fr"]
-
+def extract_pages_main(pages_dict, database_name, selected_tokenizer, selected_token_limit, save_html, blacklist_dict):
     global PROCESSED_LINKS
 
     for language in pages_dict:
@@ -187,24 +187,21 @@ def extract_pages_main(pages_dict, database_name, save_html, blacklist_dict, sel
 
             all_processed_pages.extend(processed_pages)
 
-        save_to_csv(all_processed_pages, database_name, "pages", language)
+        save_to_csv(all_processed_pages, database_name, "page", language)
 
 if __name__ == "__main__":
-    from rag_utils.db_config import EmbeddingModel, ModelsConfig, VectorDBDataFiles
+    from db_config import VectorDBDataFiles
+    from rag.extract_page import extract_pages_main
+    from rag.page_utils import get_tokenizer_and_limit
 
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
-
-    selected_tokenizer = selected_model.model.tokenizer
-    selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding
-
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
     databases = VectorDBDataFiles.databases
 
     for db in databases:
         db_name = db["name"]
         save_html = db.get("save_html", False)
 
-        pages = db.get("pages")
+        pages = db.get("page")
 
         if pages:
-            extract_pages_main(pages, db_name, save_html, db.get("pages_blacklist"), selected_tokenizer, selected_token_limit)
+            extract_pages_main(pages, db_name, selected_tokenizer, selected_token_limit, save_html, db.get("page_blacklist"))

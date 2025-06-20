@@ -4,6 +4,10 @@ import csv
 from dataclasses import dataclass
 import re
 from urllib.parse import urlparse
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))  # Add the parent directory to sys.path
+from db_config import EmbeddingModel, ModelsConfig, VectorDBDataFiles
 
 @dataclass
 class TextChunk:
@@ -28,6 +32,15 @@ def get_base_url(url: str) -> str:
     parsed_url = urlparse(url)
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}" if parsed_url.scheme else parsed_url.netloc
     return base_url
+
+def get_tokenizer_and_limit():
+    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
+    selected_model.assign_model_and_attributes()
+
+    selected_tokenizer = selected_model.model.tokenizer
+    selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding
+    
+    return selected_tokenizer, selected_token_limit
 
 # Add hashtag markers around header text for easier parsing later
 def add_header_tags(soup):
@@ -223,7 +236,7 @@ def get_page_csv_row(page: Page) -> List[str]:
     return [page.id, page.title, page.url, " / ".join(page.hierarchy), " / ".join(page.url_hierarchy), "|".join(page.linked_pages) if page.linked_pages else "", ";".join(reference_section_number) if reference_section_number else "", page.date_modified]
 
 def save_to_csv(pages: List[Page], database_name: str, filename: str, lang: str, is_pdf: bool = False):
-    os.makedirs("outputs", exist_ok=True)
+    os.makedirs(f"outputs/{database_name}", exist_ok=True)
     lang_suffix = "_fr" if lang != "en" else ""
     csv_path = f"outputs/{database_name}/{filename}{lang_suffix}.csv"
     existing_page_ids = []
