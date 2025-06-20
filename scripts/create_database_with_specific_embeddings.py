@@ -199,6 +199,8 @@ def main(collection_name:str,
                         distance_func])
             print("Collection name and specs saved to list of collections in './collections.json'")
 
+def get_error_message_for_mismatch_in_languages(db_name, data_type):
+    return f"Error: Mismatch in the number of languages for the {data_type} in db '{db_name}'"
 
 if __name__ == "__main__":
 
@@ -220,19 +222,31 @@ if __name__ == "__main__":
         # Create data files tuples for each type of data file
         db_ipg = db.get("ipg")
         if db_ipg:
+            if len(languages) != len(db_ipg):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "IPGs"))
+            
             data_files_tuples.append((root_path + "ipg", False))
         
         db_law = db.get("law")
         if db_law:
+            if len(languages) != len(db_law):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "laws"))
+            
             for toc_type, _ in db_law[languages[0]]:
                 data_files_tuples.append((root_path + toc_type, True))
 
         db_pages = db.get("page")
         if db_pages:
+            if len(languages) != len(db_pages):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "pages"))
+            
             data_files_tuples.append((root_path + "page", False))
 
         db_pdfs = db.get("pdf")
         if db_pdfs:
+            if len(languages) != len(db_pdfs):
+                raise ValueError(get_error_message_for_mismatch_in_languages(db_name, "pdfs"))
+            
             data_files_tuples.append((root_path + "pdf", False))
 
         for language in languages:

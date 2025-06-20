@@ -124,7 +124,7 @@ def extract_pdfs_main(pdf_dict, database_name, selected_tokenizer, selected_toke
             pages.append(page)
 
         # Save to CSV
-        save_to_csv(pages, database_name, "pdfs", language, is_pdf=True)
+        save_to_csv(pages, database_name, "pdf", language, is_pdf=True)
 
 if __name__ == "__main__":
     from db_config import VectorDBDataFiles
