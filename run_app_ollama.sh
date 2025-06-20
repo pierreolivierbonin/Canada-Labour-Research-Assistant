@@ -12,6 +12,8 @@ printf "\n\nHello! Please select the mode in which you want to launch this appli
 
 read user_input
 
+# export OLLAMA_FLASH_ATTENTION=1       # uncomment if you wanna use flash attention
+# export OLLAMA_KV_CACHE_TYPE=q8_0      # uncomment if you wanna use a quantized version of the model
 ollama pull "llama3.2:latest" &&
 ollama serve # stops any ollama process already running before running it here (https://github.com/ollama/ollama/issues/3575)
 streamlit run ./chatbot_app.py $user_input
