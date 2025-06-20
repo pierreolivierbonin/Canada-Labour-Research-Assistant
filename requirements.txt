@@ -197,7 +197,7 @@ typer==0.16.0
 typing-inspection==0.4.1
 typing_extensions==4.14.0
 tzdata==2025.2
-urllib3==2.4.0
+urllib3==2.5.0
 uv==0.7.9
 uvicorn==0.34.3
 uvloop==0.21.0
