@@ -160,7 +160,7 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
 
     return current_processed_pages
 
-def extract_pages_main(pages_dict, database_name, selected_tokenizer, selected_token_limit, save_html, blacklist_dict):
+def extract_pages_main(pages_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int, save_html:bool, blacklist_dict:dict):
     global PROCESSED_LINKS
 
     for language in pages_dict:

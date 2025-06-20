@@ -267,7 +267,7 @@ def process_toc_page(toc_url, database_name, file_name, tokenizer, token_limit, 
                         section.text
                     ])
 
-def extract_law_main(law_dict, database_name, selected_tokenizer, selected_token_limit):
+def extract_law_main(law_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int):
     for language in law_dict.keys():
         print(f"Processing Law Code in {language}...")
         

@@ -114,7 +114,7 @@ def extract_ipgs_from_table(table) -> List[IPG]:
     
     return ipgs
 
-def extract_ipgs_main(ipg_dict, database_name, selected_tokenizer, selected_token_limit, save_html):
+def extract_ipgs_main(ipg_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int, save_html:bool):
     for language in ipg_dict.keys():
         print(f"Processing IPGs in {language}...")
 
