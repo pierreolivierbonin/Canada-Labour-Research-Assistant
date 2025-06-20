@@ -38,6 +38,7 @@ class VectorDBDataFiles:
         {
             "name": "labour",
             "save_html": True,
+            "languages": ["en", "fr"],
             "ipg": {
                 "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html",
                 "fr": "https://www.canada.ca/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
@@ -52,7 +53,7 @@ class VectorDBDataFiles:
                     ("clsr", "https://laws-lois.justice.gc.ca/fra/reglements/C.R.C.%2C_ch._986/")
                 ]
             },
-            "pages": {
+            "page": {
                 "en": [
                     ("LABOUR", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour.html"),
                     ("WORKPLACE", "https://www.canada.ca/en/services/jobs/workplace.html"),
@@ -70,7 +71,7 @@ class VectorDBDataFiles:
                     ("HEALTH-SAFETY", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite.html")
                 ]
             },
-            "pages_blacklist": {
+            "page_blacklist": {
                 "en": [
                     "/en/news/",
                     "/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html"
@@ -83,7 +84,8 @@ class VectorDBDataFiles:
         },
         {
             "name": "equity",
-            "pdfs": {
+            "languages": ["en", "fr"],
+            "pdf": {
                 "en": [
                     "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuide-20220224-PDF%20(1).pdf",
                     "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/EmployerOnboardingGuide-LEEP-2024.pdf",

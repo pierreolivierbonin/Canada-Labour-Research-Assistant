@@ -6,7 +6,7 @@ import streamlit as st
 from config import BaseChatbotInterfaceConfig, ChatbotInterfaceConfig, vLLMChatbotInterfaceConfig, vLLMRAGConfig, QuotationsConfig, OllamaRAGConfig
 from context import _retrieve_tokenizer
 from profiling import compile_profiled_stats
-from rag_utils.db_config import VectorDBDataFiles
+from db_config import VectorDBDataFiles
 from tools import _load_vector_database, retrieve_database_stream
 from translations import Translator
 

@@ -15,11 +15,9 @@ from urllib.parse import urljoin
 from dataclasses import dataclass
 import os
 
-from rag_utils.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text, get_base_url
+from rag.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text, get_base_url
 
 MAX_WORKERS = 10
-#BASE_URL = "https://www.canada.ca"
-
 PROCESSED_IPG_IDS = []
 
 @dataclass
@@ -116,9 +114,7 @@ def extract_ipgs_from_table(table) -> List[IPG]:
     
     return ipgs
 
-def extract_ipgs_main(ipg_dict, database_name, save_html, selected_tokenizer, selected_token_limit):
-    # languages = ["en", "fr"]
-
+def extract_ipgs_main(ipg_dict, database_name, selected_tokenizer, selected_token_limit, save_html):
     for language in ipg_dict.keys():
         print(f"Processing IPGs in {language}...")
 
@@ -156,7 +152,21 @@ def extract_ipgs_main(ipg_dict, database_name, save_html, selected_tokenizer, se
                 if page:
                     processed_pages.append(page)
         
-        save_to_csv(processed_pages, database_name, "ipgs", language)
+        save_to_csv(processed_pages, database_name, "ipg", language)
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    from db_config import VectorDBDataFiles
+    from rag.page_utils import get_tokenizer_and_limit
+    from rag.extract_ipgs import extract_ipgs_main
+
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
+    databases = VectorDBDataFiles.databases
+
+    for db in databases:
+        db_name = db["name"]
+        save_html = db.get("save_html", False)
+
+        ipgs = db.get("ipg")
+
+        if ipgs:
+            extract_ipgs_main(ipgs, db_name, selected_tokenizer, selected_token_limit, save_html)
