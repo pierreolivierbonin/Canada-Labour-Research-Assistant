@@ -16,7 +16,7 @@ dependencies = [
     'nltk==3.9.1',
     'ollama==0.4.2',
     'protobuf==3.20.3',
-    'pymupdf4llm==0.0.24',
+    'pymupdf4llm==0.0.25',
     'sentencepiece==0.2.0',
     'sentence-transformers==3.0.1',
     'streamlit==1.45.1',
