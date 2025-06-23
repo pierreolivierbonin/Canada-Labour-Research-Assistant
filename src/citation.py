@@ -387,7 +387,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     # Process each quote
     for quote in quotes:
         # Skip quotes with X or fewer non-capitalized words
-        if len([word for word in quote.split() if not word.isupper()]) <= QuotationsConfig.min_non_header_words_in_quote:
+        if len([word for word in quote.split() if not word.isupper()]) < QuotationsConfig.min_non_header_words_in_quote:
             continue
             
         attribution = replacement_text = None
@@ -400,7 +400,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
             quote_without_title = quote.replace(chunk_title, '', 1).strip()
 
             # Skip the chunk if the len of words in the quote that are not the title is <= min_non_header_words_in_quote
-            if len([word for word in quote_without_title.split() if not word.isupper()]) <= QuotationsConfig.min_non_header_words_in_quote:
+            if len([word for word in quote_without_title.split() if not word.isupper()]) < QuotationsConfig.min_non_header_words_in_quote:
                 continue
 
             segment, start, end, score = find_segment_with_longest_common_subsequence(quote, chunk_text)

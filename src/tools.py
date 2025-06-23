@@ -127,17 +127,17 @@ def retrieve_database(database_question,
         database_question, language, db_name,question_section_numbers, n_results
     )
     
-    formatted_documents= format_context_for_prompt(ids, metadata, documents)
+    formatted_documents, formatted_documents_for_messages = format_context_for_prompt(ids, metadata, documents)
     formatted_documents, metadata, ids, distances = reprioritize_docs(
         question_section_numbers, formatted_documents, metadata, ids, distances
     )
 
     # Keep only the top X docs returned
-    formatted_documents, metadata, ids, distances = formatted_documents[:n_results], metadata[:n_results], ids[:n_results], distances[:n_results]
+    formatted_documents, formatted_documents_for_messages, metadata, ids, distances = formatted_documents[:n_results], formatted_documents_for_messages[:n_results], metadata[:n_results], ids[:n_results], distances[:n_results]
 
     # Create one message per source document
     document_messages = []
-    for id, source_doc in zip(ids, formatted_documents):
+    for id, source_doc in zip(ids, formatted_documents_for_messages):
         document_messages.append({
             'role': 'user',
             'content': f"{id}:\n\n{source_doc}"
