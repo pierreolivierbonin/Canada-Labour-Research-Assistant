@@ -431,7 +431,8 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
         else:
             attribution = "(no source found for the quote)"
 
-        if replacement_text is None and include_attribution:
+        # Specify that no source found even when include_attribution is False
+        if replacement_text is None and attribution:
             replacement_text = f'"{quote}"'
         elif replacement_text is None:
             continue
