@@ -23,16 +23,16 @@ dependencies = [
     'summac==0.0.4',
     'transformers>=4.8.1',
     # adapt the version you need according to your available compute resources
-    "torch==2.6.0+cu124",
+    "torch==2.7.1+cu128",
     ]
 
 [tool.setuptools.packages.find]
 where = ["src/"]
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu124" }
+torch = { index = "pytorch-cu128" }
 
 [[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
 explicit = true
