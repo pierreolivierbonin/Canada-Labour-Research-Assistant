@@ -133,7 +133,7 @@ posthog==4.2.0
 prometheus-fastapi-instrumentator==7.1.0
 prometheus_client==0.22.1
 propcache==0.3.1
-protobuf==3.20.3
+protobuf==4.25.8
 psutil==7.0.0
 py-cpuinfo==9.0.0
 pyarrow==20.0.0
@@ -197,7 +197,7 @@ typer==0.16.0
 typing-inspection==0.4.1
 typing_extensions==4.14.0
 tzdata==2025.2
-urllib3==2.4.0
+urllib3==2.5.0
 uv==0.7.9
 uvicorn==0.34.3
 uvloop==0.21.0
