@@ -35,14 +35,75 @@ class ModelsConfig:
 @dataclass
 class VectorDBDataFiles:
     databases = [
-    
         {
-            "name": "negotech",
-            "languages": ["en"],
+            "name": "labour",
+            "save_html": True,
+            "languages": ["en", "fr"],
+            "ipg": {
+                "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html",
+                "fr": "https://www.canada.ca/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
+            },
+            "law": {
+                "en": [
+                    ("clc", "https://laws-lois.justice.gc.ca/eng/acts/l-2/"),
+                    ("clsr", "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._986/")
+                ],
+                "fr": [
+                    ("clc", "https://laws-lois.justice.gc.ca/fra/lois/l-2/"),
+                    ("clsr", "https://laws-lois.justice.gc.ca/fra/reglements/C.R.C.%2C_ch._986/")
+                ]
+            },
+            "page": {
+                "en": [
+                    ("LABOUR", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour.html"),
+                    ("WORKPLACE", "https://www.canada.ca/en/services/jobs/workplace.html"),
+                    ("LABOUR-REPORTS", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour/programs/labour-standards/reports.html"),
+                    ("LABOUR-STANDARDS", "https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html"),
+                    ("COMPENSATION", "https://www.canada.ca/en/services/jobs/workplace/health-safety/compensation.html"),
+                    ("HEALTH-SAFETY", "https://www.canada.ca/en/services/jobs/workplace/health-safety.html")
+                ],
+                "fr": [
+                    ("LABOUR", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail.html"),
+                    ("WORKPLACE", "https://www.canada.ca/fr/services/emplois/milieu-travail.html"),
+                    ("LABOUR-REPORTS", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail/programmes/normes-travail/rapports.html"),
+                    ("LABOUR-STANDARDS", "https://www.canada.ca/fr/services/emplois/milieu-travail/normes-travail-federales.html"),
+                    ("COMPENSATION", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite/indemnisation.html"),
+                    ("HEALTH-SAFETY", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite.html")
+                ]
+            },
+            "page_blacklist": {
+                "en": [
+                    "/en/news/",
+                    "/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html"
+                ],
+                "fr": [
+                    "/fr/nouvelles.html",
+                    "/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
+                ]
+            }
+        },
+        {
+            "name": "equity",
+            "languages": ["en", "fr"],
             "pdf": {
-                "en": ["https://negotech.service.canada.ca/eng/agreements/15/1538401a.pdf",
-                       "https://negotech.service.canada.ca/eng/agreements/15/1538101a.pdf",
-                       "https://negotech.service.canada.ca/eng/agreements/15/1537601a.pdf"]
+                "en": [
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuide-20220224-PDF%20(1).pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/EmployerOnboardingGuide-LEEP-2024.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/Taking%20action%20on%20your%20employment%20equity%20data.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWorkshopHowToInterpretForm2,%20parts%20D-G-20220427.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDStep-by-step%20guide%20for%20annual%20Legislated%20Employment%20Equity%20Program%20(LEEP)%20reporting.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/EmployerOnboardingGuide-FCP-2024.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDHowToImproveWorkplaceEquity-20230308-PDF.pdf"
+                ],
+                "fr": [
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuideFR-20220224-PDF%20(1).pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/GuideDIntegrationPourLesEmployeurs-PLEME-2024.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/Agir%20a%20partir%20de%20vos%20donnees%20sur%20l%20equite%20en%20emploi.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDAtelierCommentInterpreterVotreFormulaire%202,%20parties%20D-G-20220428.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-Guide%20de%20preparation%20etape%20par%20etape%20du%20rapport%20annuel%20du%20Programme%20legifere%20dequite%20en%20matiere%20demploi%20(PLEME).pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/GuideDIntegrationPourLesEmployeurs-PCF-2024.pdf",
+                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDCommentAmeliorerLequiteSurLeLieuDuTravailFR-20230308-PDF.pdf"
+                ]
             }
         }
     ]
