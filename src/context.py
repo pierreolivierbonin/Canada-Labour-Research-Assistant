@@ -119,7 +119,13 @@ def format_context_for_prompt(ids, metadata_list, documents_list):
 
     formatted_documents = [f'{meta}, "text": "{doc.strip()}"' for meta, doc in zip(formatted_metadata, documents_list)]
 
-    return formatted_documents
+    # Replace double quotes with single quotes to avoid issues in the quotation attribution later on.
+    def fix_doc_quotes(doc):
+        return doc.replace('"', "'").strip()
+
+    formatted_documents_for_messages = [f'{meta}, "text": "{fix_doc_quotes(doc)}"' for meta, doc in zip(formatted_metadata, documents_list)]
+
+    return formatted_documents, formatted_documents_for_messages
 
 # Format the metadata to be displayed in the "metadata" tab of the chatbot
 def format_for_metadata_tab_ui(ids_list, metadata_list):

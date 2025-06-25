@@ -17,7 +17,6 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from urllib.parse import urlparse
 from typing import List, Optional
-from rag_utils.db_config import EmbeddingModel, ModelsConfig, WebCrawlConfig
 
 class SectionItem:
     def __init__(self, section_number: str, title: str, text: str, tag_id: str):
@@ -176,7 +175,7 @@ def extract_page_text(soup, url, is_schedule = False) -> Optional[List[SectionIt
     
     return None
 
-def process_toc_page(toc_url, file_name, tokenizer, token_limit, current_language):
+def process_toc_page(toc_url, database_name, file_name, tokenizer, token_limit, current_language):
     print("Fetching table of contents links...")
     toc_items = get_main_toc_links(toc_url)
     print(f"Found {len(toc_items)} leaf links.")
@@ -201,7 +200,7 @@ def process_toc_page(toc_url, file_name, tokenizer, token_limit, current_languag
     language_suffix = "_fr" if current_language != "en" else ""
     
     # Open the CSV file for writing
-    with open(f"outputs/{file_name}{language_suffix}.csv", "w", newline="", encoding="utf-8") as csvfile:
+    with open(f"outputs/{database_name}/{file_name}{language_suffix}.csv", "w", newline="", encoding="utf-8") as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(["id", "title", "section_number", "hierarchy", "hyperlink", "text"])
 
@@ -268,22 +267,30 @@ def process_toc_page(toc_url, file_name, tokenizer, token_limit, current_languag
                         section.text
                     ])
 
-if __name__ == "__main__":
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
-
-    selected_tokenizer = selected_model.model.tokenizer
-    selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding
-
-    languages = ["en", "fr"]
-
-    for language in languages:
-        print(f"Processing TOC in {language}...")
+def extract_law_main(law_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int):
+    for language in law_dict.keys():
+        print(f"Processing Law Code in {language}...")
         
-        documents = WebCrawlConfig.toc_filenames_and_urls if language == "en" else WebCrawlConfig.toc_filenames_and_urls_fr
+        #documents = WebCrawlConfig.toc_filenames_and_urls if language == "en" else WebCrawlConfig.toc_filenames_and_urls_fr
+        documents = law_dict[language]
 
         # Create outputs directory if it doesn't exist
-        os.makedirs("outputs", exist_ok=True)
+        os.makedirs(f"outputs/{database_name}", exist_ok=True)
 
         for file_name, toc_url in documents:
-            process_toc_page(toc_url, file_name, selected_tokenizer, selected_token_limit, language)
+            process_toc_page(toc_url, database_name, file_name, selected_tokenizer, selected_token_limit, language)
+
+if __name__ == "__main__":
+    from db_config import VectorDBDataFiles
+    from rag.page_utils import get_tokenizer_and_limit
+    from rag.extract_law import extract_law_main
+
+    databases = VectorDBDataFiles.databases
+    selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
+
+    for db in databases:
+        db_name = db["name"]
+        laws = db.get("law")
+
+        if laws:
+            extract_law_main(laws, db_name, selected_tokenizer, selected_token_limit)

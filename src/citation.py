@@ -9,7 +9,7 @@ from config import QuotationsConfig
 
 # Function to clean text by removing punctuation and converting to lowercase
 def clean_text(text):
-    translator = str.maketrans('', '', string.punctuation)
+    translator = str.maketrans('', '', string.punctuation + "“”")
     cleaned = text.translate(translator).lower()
     return [word for word in cleaned.split() if word]
 
@@ -368,6 +368,9 @@ def format_matched_segment(matched_segment, chunk_text, chunk_index, start_pos, 
 
     return replacement_text, attribution
 
+def check_non_header_words_in_quote_under_threshold(quote):
+    return len([word for word in quote.split() if not word.isupper()]) < QuotationsConfig.min_non_header_words_in_quote
+
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
 def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False):
     # Extract regular quotes sections
@@ -387,7 +390,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     # Process each quote
     for quote in quotes:
         # Skip quotes with X or fewer non-capitalized words
-        if len([word for word in quote.split() if not word.isupper()]) <= QuotationsConfig.min_non_header_words_in_quote:
+        if check_non_header_words_in_quote_under_threshold(quote):
             continue
             
         attribution = replacement_text = None
@@ -399,12 +402,16 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
             # Remove the title from the start of the quote (and only the start)
             quote_without_title = quote.replace(chunk_title, '', 1).strip()
 
-            # Skip the chunk if the len of words in the quote that are not the title is <= min_non_header_words_in_quote
-            if len([word for word in quote_without_title.split() if not word.isupper()]) <= QuotationsConfig.min_non_header_words_in_quote:
+            # Skip the chunk if the len of words in the quote that are not the title is < min_non_header_words_in_quote
+            if check_non_header_words_in_quote_under_threshold(quote_without_title):
                 continue
 
             segment, start, end, score = find_segment_with_longest_common_subsequence(quote, chunk_text)
             
+            # Skip the found segment if it has too few non-header words
+            if check_non_header_words_in_quote_under_threshold(segment):
+                continue
+
             if score > best_score:
                 best_score = score
                 best_chunk_text = chunk_text
