@@ -9,7 +9,7 @@ from config import QuotationsConfig
 
 # Function to clean text by removing punctuation and converting to lowercase
 def clean_text(text):
-    translator = str.maketrans('', '', string.punctuation)
+    translator = str.maketrans('', '', string.punctuation + "“”")
     cleaned = text.translate(translator).lower()
     return [word for word in cleaned.split() if word]
 
