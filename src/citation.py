@@ -382,7 +382,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     quotes = list(set(quotes))
 
     # Order them in ascending order of nb of words
-        # Fixes the bug when replacing a smaller quote after a lrger one, the text within the larger quote ise repalced twice (creates a link in a link)
+        # Fixes the bug when replacing a smaller quote after a larger one, the text within the larger quote is replaced twice (creates a link in a link)
     quotes = sorted(quotes, key=lambda x: len(x.split()))
 
     modified_answer = llm_answer
@@ -429,7 +429,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
                 best_chunk_id, best_chunk_title, best_chunk_url, include_html, include_attribution, best_score, include_complete_sentence
             )
         else:
-            attribution = "(no source found for the quote)"
+            attribution = "(no source found for the quotation)"
 
         # Specify that no source found even when include_attribution is False
         if replacement_text is None and attribution:
