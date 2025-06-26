@@ -128,8 +128,8 @@ def retrieve_database(database_question,
     )
     
     formatted_documents, formatted_documents_for_messages = format_context_for_prompt(ids, metadata, documents)
-    formatted_documents, metadata, ids, distances = reprioritize_docs(
-        question_section_numbers, formatted_documents, metadata, ids, distances
+    documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances = reprioritize_docs(
+        question_section_numbers, documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances
     )
 
     # Keep only the top X docs returned

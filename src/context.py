@@ -173,15 +173,15 @@ def extract_reference_section_numbers(text: str) -> List[str]:
     section_numbers = sorted(list(set(sections)), key=lambda x: float(x))
     return section_numbers
 
-def reprioritize_docs(question_section_numbers, documents, metadata, ids, distances):
+def reprioritize_docs(question_section_numbers, documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances):
     if len(question_section_numbers) == 0:
-        return documents, metadata, ids, distances
+        return documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances
     
     prioritized = []
     non_prioritized = []
     
     # Go through list in reverse order
-    for doc, meta, id, dist in list(zip(documents, metadata, ids, distances)):
+    for doc, formatted_doc, formatted_doc_for_messages, meta, id, dist in list(zip(documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances)):
         # Split reference numbers into list
         ref_numbers = extract_reference_section_numbers(doc)
         ref_numbers_without_subsections = [number.split('.')[0] for number in ref_numbers]
@@ -195,16 +195,16 @@ def reprioritize_docs(question_section_numbers, documents, metadata, ids, distan
                 break
         
         if is_prioritized:
-            prioritized.append((doc, meta, id, dist))
+            prioritized.append((doc, formatted_doc, formatted_doc_for_messages, meta, id, dist))
         else:
-            non_prioritized.append((doc, meta, id, dist))
+            non_prioritized.append((doc, formatted_doc, formatted_doc_for_messages, meta, id, dist))
     
     combined = prioritized + non_prioritized
 
     if len(combined) == 0:
         print("WARNING: No documents returned, potential error in the prioritization process.")
-        return documents, metadata, ids, distances
+        return documents, formatted_documents, formatted_documents_for_messages, metadata, ids, distances
 
     # Unzip the reordered list
-    docs, metas, ids, dists = zip(*combined)
-    return list(docs), list(metas), list(ids), list(dists)
+    docs, formatted_docs, formatted_docs_for_messages, metas, ids, dists = zip(*combined)
+    return list(docs), list(formatted_docs), list(formatted_docs_for_messages), list(metas), list(ids), list(dists)
