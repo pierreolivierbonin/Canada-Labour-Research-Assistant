@@ -156,8 +156,6 @@ python-multipart==0.0.20
 pytz==2025.2
 PyYAML==6.0.2
 pyzmq==26.4.0
-# Editable install with no version control (RAG_Agent_v1==0.0.0)
--e /home/mark/projects/Canada-Labour-Research-Assistant/vllm_setup
 ray==2.46.0
 referencing==0.36.2
 regex==2024.11.6
