@@ -49,7 +49,7 @@ class ChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     default_model_remote = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
     models_shortlist_remote = [default_model_remote]
     language = "en"
-    nb_previous_questions = 1
+    nb_previous_questions = 0
     db_name = "labour"
 
 @dataclass
@@ -61,7 +61,7 @@ class vLLMChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     default_model_remote = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
     models_shortlist_remote = ["meta-llama/Llama-4-Scout-17B-16E-Instruct"]
     language = "en"
-    nb_previous_questions = 1
+    nb_previous_questions = 0
     db_name = "labour"
 
 @dataclass
