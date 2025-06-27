@@ -41,8 +41,8 @@ class BaseChatbotInterfaceConfig:
 class ChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     default_mode = "local"
     title = "Canada Labour Research Assistant"
-    default_model_local = "gemma3n:e2b"
-    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b', "gemma3n:e2b", "gemma3n:latest",
+    default_model_local = "gemma3n:latest"
+    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b', "gemma3n:latest",
                         'granite3-dense:8b',
                         'llama3.2:latest', "llama3.2-3B-instruct-q4-k-l:latest", "llama3.2-3B-instruct-q4-k-m:latest",
                         'mistral-small:24b-instruct-2501-q4_K_M', 'mistral-small3.1', 'mistral-nemo']
