@@ -129,7 +129,6 @@ class RAGConfig:
         "meta-llama/Llama-4-Scout-17B-16E-Instruct": 327680,
         "meta-llama/Llama-3.2-3B-Instruct": 131072,
         "google/gemma-2-9b": 131072,
-        "gemma3n:e2b":32768,
         "gemma3n:e4b":32768,
         "gemma3:1b": 32768,
         "gemma3:4b": 131072,
