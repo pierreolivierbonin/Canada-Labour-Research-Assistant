@@ -41,8 +41,8 @@ class BaseChatbotInterfaceConfig:
 class ChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     default_mode = "local"
     title = "Canada Labour Research Assistant"
-    default_model_local = "llama3.2:latest"
-    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b',
+    default_model_local = "gemma3n:e2b"
+    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b', "gemma3n:e2b", "gemma3n:latest",
                         'granite3-dense:8b',
                         'llama3.2:latest', "llama3.2-3B-instruct-q4-k-l:latest", "llama3.2-3B-instruct-q4-k-m:latest",
                         'mistral-small:24b-instruct-2501-q4_K_M', 'mistral-small3.1', 'mistral-nemo']
@@ -129,6 +129,8 @@ class RAGConfig:
         "meta-llama/Llama-4-Scout-17B-16E-Instruct": 327680,
         "meta-llama/Llama-3.2-3B-Instruct": 131072,
         "google/gemma-2-9b": 131072,
+        "gemma3n:e2b":32768,
+        "gemma3n:e4b":32768,
         "gemma3:1b": 32768,
         "gemma3:4b": 131072,
         "gemma3:12b": 131072,
@@ -153,9 +155,9 @@ class OllamaRAGConfig:
     '''
 
     HyperparametersAccuracyConfig = {
-        "mirostat_tau":0,
         "seed":1837,
         "num_ctx": 4096, # context window used (4096 covers the default value of 5 chunks of 500 tokens each retrieved + buffer); impacts latency on lower-grade GPUs
+        "num_predict": 2000,
         "temperature": 0.0,
         "top_k":1,
         "top_p":0.1 # Top P is not used unless you set the Top P parameter value to something other than the default value of 1.
