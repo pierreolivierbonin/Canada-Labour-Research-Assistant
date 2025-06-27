@@ -39,12 +39,14 @@ read user_input
 # export OLLAMA_KV_CACHE_TYPE=q8_0      # uncomment if you wanna use a quantized version of the model
 
 # Check if Ollama is already running, if not start it
-if ! pgrep -x "ollama" > /dev/null; then
-    echo "Starting Ollama server..."
-    ollama serve &
-    sleep 3
-else
-    echo "Ollama server is already running"
+if command -v pgrep &> /dev/null; then
+    if ! pgrep -x "ollama" > /dev/null; then
+        echo "Starting Ollama server..."
+        ollama serve &
+        sleep 3
+    else
+        echo "Ollama server is already running"
+    fi
 fi
 
 ollama pull "llama3.2:latest" &&
