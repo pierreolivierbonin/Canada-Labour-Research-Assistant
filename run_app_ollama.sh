@@ -38,6 +38,7 @@ read user_input
 # export OLLAMA_FLASH_ATTENTION=1       # uncomment if you wanna use flash attention
 # export OLLAMA_KV_CACHE_TYPE=q8_0      # uncomment if you wanna use a quantized version of the model
 
+
 # Check if Ollama is already running, if not start it
 if command -v pgrep &> /dev/null; then
     if ! pgrep -x "ollama" > /dev/null; then
@@ -49,5 +50,5 @@ if command -v pgrep &> /dev/null; then
     fi
 fi
 
-ollama pull "llama3.2:latest" &&
+ollama pull "gemma3n:latest" &&
 streamlit run ./chatbot_app.py $user_input
