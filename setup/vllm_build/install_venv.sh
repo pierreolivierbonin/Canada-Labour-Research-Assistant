@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-python -m venv .venv
+python3 -m venv .venv
 # Activate virtual environment (cross-platform compatible)
 if [ -f ./.venv/bin/activate ]; then
     # Unix/Linux/WSL
@@ -9,4 +9,6 @@ elif [ -f ./.venv/Scripts/activate ]; then
     source ./.venv/Scripts/activate
 fi
 pip install uv
+cd .setup_vllm
 uv pip install -e .
+cd ..
