@@ -145,7 +145,7 @@ pydantic_core==2.33.2
 pydeck==0.9.1
 Pygments==2.19.1
 PyMuPDF==1.26.0
-pymupdf4llm==0.0.24
+pymupdf4llm==0.0.25
 pynvml==12.0.0
 PyPika==0.48.9
 pyproject_hooks==1.2.0

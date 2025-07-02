@@ -105,6 +105,9 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
         # New loop to process all paths and expand folders
         expanded_pdf_paths = []
         for pdf_url_or_path in pdf_urls_or_paths:
+            if pdf_url_or_path.startswith("~"):
+                pdf_url_or_path = os.path.expanduser(pdf_url_or_path)
+
             if os.path.isdir(pdf_url_or_path):
                 # If it's a folder, add all PDF files within the folder
                 for root, _, files in os.walk(pdf_url_or_path):
@@ -145,11 +148,15 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
 
                     pdf_url = f"/app/static/{database_name}/{language}/{pdf_filename}" # Access the static file from the browser with the app/static/... path in the url (need to include the app/ prefix, even if not present in the directory)
                 else:
-                    print(f"Downloading {pdf_url}")
-                    response = requests.get(pdf_url)
+                    try:
+                        print(f"Downloading {pdf_url}")
+                        response = requests.get(pdf_url)
 
-                    with open(pdf_local_file_path, "wb") as f:
-                        f.write(response.content)
+                        with open(pdf_local_file_path, "wb") as f:
+                            f.write(response.content)
+                    except Exception as e:
+                        print(f"Error downloading {pdf_url}. Validate if the url is correct, or that the local file path is valid.")
+                        raise e
 
             print(f"Processing {pdf_filename}")
         
