@@ -91,9 +91,9 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
     return page
 
 def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, selected_token_limit:int):
-    root_folder_path = "inputs"
+    root_folder_path = "static"
 
-    # Create the inputs folder if it doesn't exist (1 liner)
+    # Create the static folder if it doesn't exist (1 liner)
     os.makedirs(root_folder_path, exist_ok=True)
 
     for language in pdf_dict.keys():
@@ -133,7 +133,6 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
         for pdf_url_or_path in expanded_pdf_paths:
             pdf_filename = os.path.basename(pdf_url_or_path)
             pdf_local_file_path = os.path.join(folder_path, pdf_filename)
-            pdf_url = pdf_url_or_path
 
             if not os.path.exists(pdf_local_file_path):
                 # Check if pdf_url is a local file path, if so use it as is
@@ -145,22 +144,22 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
 
                     # copy the pdf to the static folder
                     shutil.copy(pdf_url_or_path, pdf_local_file_path)
-
-                    pdf_url = f"/app/static/{database_name}/{language}/{pdf_filename}" # Access the static file from the browser with the app/static/... path in the url (need to include the app/ prefix, even if not present in the directory)
                 else:
                     try:
-                        print(f"Downloading {pdf_url}")
-                        response = requests.get(pdf_url)
+                        print(f"Downloading {pdf_url_or_path}")
+                        response = requests.get(pdf_url_or_path)
 
                         with open(pdf_local_file_path, "wb") as f:
                             f.write(response.content)
                     except Exception as e:
-                        print(f"Error downloading {pdf_url}. Validate if the url is correct, or that the local file path is valid.")
+                        print(f"Error downloading {pdf_url_or_path}. Validate if the url is correct, or that the local file path is valid.")
                         raise e
+
+            pdf_hyperlink = f"/app/static/{database_name}/{language}/{pdf_filename}" # Access the static file from the browser with the app/static/... path in the url (need to include the app/ prefix, even if not present in the directory)
 
             print(f"Processing {pdf_filename}")
         
-            page = process_pdf(pdf_filename, pdf_local_file_path, pdf_url, selected_tokenizer, selected_token_limit)
+            page = process_pdf(pdf_filename, pdf_local_file_path, pdf_hyperlink, selected_tokenizer, selected_token_limit)
             pages.append(page)
 
         # Save to CSV
