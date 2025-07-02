@@ -1,6 +1,7 @@
 import pymupdf4llm
 import re
 import os
+import shutil
 from rag.page_utils import Page, chunk_text, save_to_csv
 import requests
 
@@ -98,29 +99,61 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
     for language in pdf_dict.keys():
         # Get the pdf urls from the db_config
         #pdf_urls = WebCrawlConfig.pdf_urls_fr if language == "fr" else WebCrawlConfig.pdf_urls
-        pdf_urls = pdf_dict[language]
+        pdf_urls_or_paths = pdf_dict[language]
         pages = []
+
+        # New loop to process all paths and expand folders
+        expanded_pdf_paths = []
+        for pdf_url_or_path in pdf_urls_or_paths:
+            if os.path.isdir(pdf_url_or_path):
+                # If it's a folder, add all PDF files within the folder
+                for root, _, files in os.walk(pdf_url_or_path):
+                    for file in files:
+                        if file.lower().endswith('.pdf'):
+                            expanded_pdf_paths.append(os.path.join(root, file))
+            else:
+                # If it's a file, add it directly
+                expanded_pdf_paths.append(pdf_url_or_path)
 
         folder_path = os.path.join(root_folder_path, language)
         os.makedirs(folder_path, exist_ok=True)
 
         print(f"Processing PDFs in {language}...")
 
+        static_local_pdf_dir = os.path.join(".", "static", database_name, language)
+
+        # Clear static folder if it exists
+        if os.path.exists(static_local_pdf_dir):
+            shutil.rmtree(static_local_pdf_dir)
+
         # Download the pdfs to the inputs folder
-        for pdf_url in pdf_urls:
-            pdf_file = pdf_url.split("/")[-1]
-            pdf_file_path = os.path.join(folder_path, pdf_file)
+        for pdf_url_or_path in expanded_pdf_paths:
+            pdf_filename = os.path.basename(pdf_url_or_path)
+            pdf_local_file_path = os.path.join(folder_path, pdf_filename)
+            pdf_url = pdf_url_or_path
 
-            if not os.path.exists(pdf_file_path):
-                print(f"Downloading {pdf_url}")
-                response = requests.get(pdf_url)
+            if not os.path.exists(pdf_local_file_path):
+                # Check if pdf_url is a local file path, if so use it as is
+                if os.path.exists(pdf_url_or_path):
+                    # create the static folder if it doesn't exist
+                    os.makedirs(static_local_pdf_dir, exist_ok=True)
 
-                with open(pdf_file_path, "wb") as f:
-                    f.write(response.content)
+                    pdf_local_file_path = os.path.join(static_local_pdf_dir, pdf_filename) # path to the static folder in the project's root directory
 
-            print(f"Processing {pdf_file}")
+                    # copy the pdf to the static folder
+                    shutil.copy(pdf_url_or_path, pdf_local_file_path)
+
+                    pdf_url = f"/app/static/{database_name}/{language}/{pdf_filename}" # Access the static file from the browser with the app/static/... path in the url (need to include the app/ prefix, even if not present in the directory)
+                else:
+                    print(f"Downloading {pdf_url}")
+                    response = requests.get(pdf_url)
+
+                    with open(pdf_local_file_path, "wb") as f:
+                        f.write(response.content)
+
+            print(f"Processing {pdf_filename}")
         
-            page = process_pdf(pdf_file, pdf_file_path, pdf_url, selected_tokenizer, selected_token_limit)
+            page = process_pdf(pdf_filename, pdf_local_file_path, pdf_url, selected_tokenizer, selected_token_limit)
             pages.append(page)
 
         # Save to CSV

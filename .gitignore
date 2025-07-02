@@ -20,4 +20,5 @@ collections.csv
 sparse_logs
 Llama-3.2*
 vllm/
+static/
 src/CLaRA*
