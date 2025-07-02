@@ -83,7 +83,7 @@ cd canada-labour-research-assistant
 ```
 
 #### All-in-one setup
-Run `./setup/ollama_build/full_install_and_launch_pipeline.sh`.
+Run `./full_install_pipeline_ollama.sh`.
 
 If you prefer to do it one step at a time:
 
@@ -132,10 +132,15 @@ Then, install the drivers as appropriate to run [GPU paravirtualization on WSL-U
 
 If you intend to use LoRA adapters, install `jq` by running `sudo apt-get install jq`.
 
+#### All-in-one setup
+Run `./full_install_pipeline_vllm.sh`.
+
+If you prefer to do it one step at a time:
+
 #### Step #1
 Install the virtual environment by running:
 ```sh
-source ./setup/vllm_build/install_venv_vllm.sh
+source ./setup/vllm_build/install_venv.sh
 ```
 
 #### Step #2
