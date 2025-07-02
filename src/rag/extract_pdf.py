@@ -118,9 +118,6 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
                 # If it's a file, add it directly
                 expanded_pdf_paths.append(pdf_url_or_path)
 
-        folder_path = os.path.join(root_folder_path, language)
-        os.makedirs(folder_path, exist_ok=True)
-
         print(f"Processing PDFs in {language}...")
 
         static_local_pdf_dir = os.path.join(".", "static", database_name, language)
@@ -132,16 +129,15 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
         # Download the pdfs to the inputs folder
         for pdf_url_or_path in expanded_pdf_paths:
             pdf_filename = os.path.basename(pdf_url_or_path)
-            pdf_local_file_path = os.path.join(folder_path, pdf_filename)
+
+            # create the static folder if it doesn't exist
+            os.makedirs(static_local_pdf_dir, exist_ok=True)
+
+            pdf_local_file_path = os.path.join(static_local_pdf_dir, pdf_filename) # path to the static folder in the project's root directory
 
             if not os.path.exists(pdf_local_file_path):
                 # Check if pdf_url is a local file path, if so use it as is
                 if os.path.exists(pdf_url_or_path):
-                    # create the static folder if it doesn't exist
-                    os.makedirs(static_local_pdf_dir, exist_ok=True)
-
-                    pdf_local_file_path = os.path.join(static_local_pdf_dir, pdf_filename) # path to the static folder in the project's root directory
-
                     # copy the pdf to the static folder
                     shutil.copy(pdf_url_or_path, pdf_local_file_path)
                 else:
