@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List
 import streamlit as st
-from transformers import PreTrainedTokenizerFast
+from transformers.tokenization_utils_fast import PreTrainedTokenizerFast
 
 import sys
 import os
@@ -132,7 +132,9 @@ def format_for_metadata_tab_ui(ids_list, metadata_list):
     formatted_metadata = []
 
     for id, metadata in zip(ids_list, metadata_list):
-        metadata_values = [metadata["hierarchy"], metadata["hyperlink"]]
+        metadata_link = f"[{metadata['hyperlink']}]({metadata['hyperlink']})" if metadata.get("hyperlink") else "" # Explicitly consider the hyperlink as a link, otherwise relative links won't work
+
+        metadata_values = [metadata["hierarchy"], metadata_link] 
         if metadata.get("section_number"):
             metadata_values.insert(0, "Section " + metadata["section_number"])
 
