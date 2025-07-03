@@ -344,7 +344,6 @@ if __name__ == '__main__':
     hyperparams = vLLMRAGConfig.HyperparametersAccuracyConfig if is_vllm else OllamaRAGConfig.HyperparametersAccuracyConfig
     engine = "vllm" if is_vllm else "ollama"
 
-
     if is_profiling:
 
         import cProfile, io, pstats  # noqa: E401
