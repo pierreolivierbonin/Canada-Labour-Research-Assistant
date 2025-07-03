@@ -208,7 +208,7 @@ This script will:
 
 - **PDF files** are automatically downloaded to the `static/` folder for offline access
 - **Static files** are accessible via `app/static/...` URLs within the application
-- **Note**: Removing a database from config doesn't delete its files from the `static/` folder
+- **Note**: Removing a database from the config file doesn't delete its files from the `static/` folder
 
 <!-- USAGE EXAMPLES -->
 ## Use Case and Portability
