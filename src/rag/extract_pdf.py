@@ -8,7 +8,6 @@ import requests
 def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_limit):
     md_pages = pymupdf4llm.to_markdown(file_path, page_chunks=True)
 
-    #first_header_level = None
     is_consider_bulletpoints_subheaders = True
 
     processed_pages = []
@@ -29,14 +28,8 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
                 # Get the number of # characters
                 header_level = len(header_match.group(1))
 
-                # # The lever of the first markdown header defines the base level of the headers
-                # if first_header_level is None:
-                #     first_header_level = header_level
-
                 # Remove the # and * characters and any leading spaces
                 clean_line = line.lstrip('# *').strip(" *")
-
-                # tag = 'h1' if first_header_level == header_level else 'h3'
 
                 tag = f'h{header_level}'
                 processed_lines.append(f"#{tag}#{clean_line}/{page_number}#{tag}#")
@@ -60,8 +53,6 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
         
         # Join the processed lines and add to combined text
         processed_page = '\n'.join(processed_lines)
-
-        # Clean page a bit 
         
         # Remove all instances of 5 dots or more
         processed_page = re.sub(r'\.{5,}', '', processed_page)
@@ -98,7 +89,6 @@ def extract_pdfs_main(pdf_dict:dict, database_name:str, selected_tokenizer, sele
 
     for language in pdf_dict.keys():
         # Get the pdf urls from the db_config
-        #pdf_urls = WebCrawlConfig.pdf_urls_fr if language == "fr" else WebCrawlConfig.pdf_urls
         pdf_urls_or_paths = pdf_dict[language]
         pages = []
 
