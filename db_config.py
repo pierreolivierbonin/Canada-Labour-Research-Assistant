@@ -117,17 +117,17 @@ class VectorDBDataFiles:
         }
         # ,{
         #     "name": "another_use_case",
-        #     "is_default": True, #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
-        #     "save_html": True, #<----- If True, the html files of all web pages will be saved in the "outputs" folder
+        #     "is_default": True,           #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
+        #     "save_html": True,            #<----- If True, the html files of all web pages will be saved in the "outputs" folder
         #     "languages": ["en"],
         #     "ressource_name": {
         #         "en": "Another use case"
         #     },
         #     "pdf": {
         #         "en": [
-        #             "https://www.example.com/pdf/example.pdf", #<----- Remote pdf
-        #             "C:/test.pdf" #<----- Local pdf file
-        #             "../use_case_x/" #<----- Local folder with pdfs
+        #             "https://www.example.com/pdf/example.pdf",  #<----- Remote pdf
+        #             "C:/test.pdf"                               #<----- Local pdf file
+        #             "../use_case_x/"                            #<----- Local folder with pdfs
         #         ] 
         #     }
         # }
