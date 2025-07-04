@@ -106,6 +106,13 @@ class VectorDBDataFiles:
                 ]
             }
         }
+        # ,{
+        #     "name": "another_use_case",
+        #     "languages": ["en"],
+        #     "pdf": {
+        #         "en": ["../use_case_x/"]  #<----- Local folder with pdfs
+        #     }
+        # }
     ]
 
 @dataclass
