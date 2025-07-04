@@ -37,8 +37,13 @@ class VectorDBDataFiles:
     databases = [
         {
             "name": "labour",
+            "is_default": True,
             "save_html": True,
             "languages": ["en", "fr"],
+            "ressource_name": {
+                "en": "Labour",
+                "fr": "Travail"
+            },
             "ipg": {
                 "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html",
                 "fr": "https://www.canada.ca/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
@@ -85,6 +90,10 @@ class VectorDBDataFiles:
         {
             "name": "equity",
             "languages": ["en", "fr"],
+            "ressource_name": {
+                "en": "Equity",
+                "fr": "Équité"
+            },
             "pdf": {
                 "en": [
                     "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuide-20220224-PDF%20(1).pdf",
@@ -108,9 +117,18 @@ class VectorDBDataFiles:
         }
         # ,{
         #     "name": "another_use_case",
+        #     "is_default": True, #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
+        #     "save_html": True, #<----- If True, the html files of all web pages will be saved in the "outputs" folder
         #     "languages": ["en"],
+        #     "ressource_name": {
+        #         "en": "Another use case"
+        #     },
         #     "pdf": {
-        #         "en": ["../use_case_x/"]  #<----- Local folder with pdfs
+        #         "en": [
+        #             "https://www.example.com/pdf/example.pdf", #<----- Remote pdf
+        #             "C:/test.pdf" #<----- Local pdf file
+        #             "../use_case_x/" #<----- Local folder with pdfs
+        #         ] 
         #     }
         # }
     ]

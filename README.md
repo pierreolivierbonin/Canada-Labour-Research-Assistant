@@ -180,11 +180,16 @@ The application can be customized for your own use case by creating new database
 ### Configuration
 
 1. **Edit the database configuration** in [`db_config.py`](./db_config.py), inside the 'VectorDBDataFiles' dataclass.
-2. **Add your data sources** using these supported formats:
-   - **Web pages**: Add URLs under the `"page"` key
-   - **Legal pages**: Add law URLs under the `"law"` key  
-   - **IPG pages**: Add IPG URLs under the `"ipg"` key
-   - **PDF files**: Add URLs or local file paths under the `"pdf"` key
+2. **Configure database metadata**:
+   - **`is_default`**: Set to `True` to make this database the default selection in the UI.
+   - **`languages`**: List of language codes (e.g., `["en", "fr"]`) that your database supports.
+   - **`ressource_name`**: Dictionary mapping language codes to display names for the UI (e.g., `{"en": "Labour", "fr": "Travail"}`).
+3. **Add your data sources** using these supported formats.
+   - **Web pages**: Add URLs under the `"page"` key, organized by language
+   - **Legal pages**: Add law URLs under the `"law"` key, organized by language
+   - **IPG pages**: Add IPG URLs under the `"ipg"` key, organized by language
+   - **PDF files**: Add URLs or local file paths under the `"pdf"` key, organized by language
+   - **Note**: Data sources must be organized by language codes (e.g., `"en"`, `"fr"`). You can support one or more languages per database:
 
 ### Supported Data Sources
 

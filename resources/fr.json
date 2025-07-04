@@ -33,10 +33,6 @@
         "previous_documents": "Documents précédents",
         "previous_metadata": "Métadonnées précédentes"
     },
-    "databases": {
-        "labour": "Travail",
-        "equity": "Équité"
-    },
     "processing": "Traitement de la requête...",
     "download": "Télécharger la réponse",
     "chat_input": "Veuillez saisir votre question ici..."
