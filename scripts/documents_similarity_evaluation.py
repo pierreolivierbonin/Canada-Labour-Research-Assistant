@@ -1,7 +1,6 @@
 import sys
 sys.path.append("./")
 
-from config import ChromaDBSettings
 from tools import _load_vector_database
 
 
@@ -42,14 +41,14 @@ if __name__ == "__main__":
     dist_description = []
     for i in rnd_sample:
         docs, metadata, ids, distances = fetch_documents_from_database_simplified(i, language="en", db_name="Labour", n_results=50)
-        print(f"Literal document chunk cosine distance: {[format(d, '.2f') for d in distances]}")
+        print(f"Document chunk cosine distances: {[format(d, '.2f') for d in distances]}")
         if i[:100]!=docs[0][:100]: # that's where we determine identity
             print(f"Original doc: {i[:100]}\nRetrieved doc: {docs[0][:100]}")
             non_identical_matches+=1
         else:
             ip_distances_with_identical_first_match.append(distances)
             dist_description.append(stats.describe(distances))
-    print(f"\n\nNon-identical document chunks matched for first 100 documents in collection: {non_identical_matches}")
+    print(f"\n\nNon-identical document chunks matched for the random sample of 100 documents in collection: {non_identical_matches}")
 
     # for d in dist_description:
     #     print(f"\n{d}")
