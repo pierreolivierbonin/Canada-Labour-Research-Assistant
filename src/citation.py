@@ -297,30 +297,6 @@ def format_matched_segment_text(text):
         
     return formatted_text
 
-def format_matched_segment_text_headers(text):
-    words = text.split()
-    
-    # Find the first non-capitalized word
-    first_non_cap_index = 0
-    for i, word in enumerate(words):
-        if not word.isupper():
-            first_non_cap_index = i
-            break
-    
-    # Count uppercase words and 'I' words only at the start
-    cap_word_count = first_non_cap_index
-    i_word_count = sum(1 for word in words[:first_non_cap_index] if word == 'I')
-            
-    # If we found 2 or more capitalized words at start (excluding I)
-    if cap_word_count - i_word_count >= 2:
-        # Convert header words to title case, preserving 'I'
-        header_words = ['I' if word == 'I' else word.title() for word in words[:cap_word_count]]
-        # Join header with remaining text
-        formatted_text = ' '.join(header_words) + ': ' + ' '.join(words[cap_word_count:])
-        return formatted_text
-        
-    return text
-
 def format_matched_segment(matched_segment, chunk_text, chunk_index, start_pos, end_pos, chunk_id, chunk_title, chunk_url, include_html, include_attribution=False, score=None, include_complete_sentence=False):
     # Optional : Remove the ... before and after the matched segment, and try to include the full sentence
     if include_complete_sentence:
@@ -350,7 +326,21 @@ def format_matched_segment(matched_segment, chunk_text, chunk_index, start_pos, 
         sentence_start = start_pos
         sentence_end = end_pos
 
-    matched_segment = format_matched_segment_text_headers(matched_segment)
+    # Fix the emphasis (**...**) if it was cut before the start or end of the matched segment
+    emphasis_pattern = r'\*\*(.*?)\*\*'
+    emphasis_matches = list(re.finditer(emphasis_pattern, chunk_text))
+    
+    for match in emphasis_matches:
+        emphasis_start = match.start()
+        emphasis_end = match.end()
+        
+        # Check if sentence_start is within an emphasis block
+        if emphasis_start < sentence_start < emphasis_end:
+            matched_segment = "**" + matched_segment
+            
+        # Check if sentence_end is within an emphasis block
+        if emphasis_start < sentence_end < emphasis_end:
+            matched_segment = matched_segment + "**"
 
     # Format the attribution string
     if not include_attribution:
@@ -368,8 +358,8 @@ def format_matched_segment(matched_segment, chunk_text, chunk_index, start_pos, 
 
     return replacement_text, attribution
 
-def check_non_header_words_in_quote_under_threshold(quote):
-    return len([word for word in quote.split() if not word.isupper()]) < QuotationsConfig.min_non_header_words_in_quote
+def check_words_in_quote_under_threshold(quote):
+    return len([word for word in quote.split()]) < QuotationsConfig.min_words_in_quote
 
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
 def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False):
@@ -389,8 +379,8 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     
     # Process each quote
     for quote in quotes:
-        # Skip quotes with X or fewer non-capitalized words
-        if check_non_header_words_in_quote_under_threshold(quote):
+        # Skip quotes with X or fewer  words
+        if check_words_in_quote_under_threshold(quote):
             continue
             
         attribution = replacement_text = None
@@ -402,14 +392,14 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
             # Remove the title from the start of the quote (and only the start)
             quote_without_title = quote.replace(chunk_title, '', 1).strip()
 
-            # Skip the chunk if the len of words in the quote that are not the title is < min_non_header_words_in_quote
-            if check_non_header_words_in_quote_under_threshold(quote_without_title):
+            # Skip the chunk if the len of words in the quote that are not the title is < min_words_in_quote
+            if check_words_in_quote_under_threshold(quote_without_title):
                 continue
 
             segment, start, end, score = find_segment_with_longest_common_subsequence(quote, chunk_text)
             
-            # Skip the found segment if it has too few non-header words
-            if check_non_header_words_in_quote_under_threshold(segment):
+            # Skip the found segment if it has too few words
+            if check_words_in_quote_under_threshold(segment):
                 continue
 
             if score > best_score:
@@ -448,13 +438,13 @@ if __name__ == "__main__":
 
     ids = ["CLC-196"]
 
-    chunks = [("""ID: CLC-196, Title: DIVISION V-General Holidays: Holiday pay, Parents: Canada Labour Code / PART III-Standard Hours, Wages, Vacations and Holidays, Section 196, Text: Section 196 (1) Subject to subsections (2) and (4), an employer shall, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the wages, excluding overtime pay, that the employee earned with the employer in the four-week period immediately preceding the week in which the general holiday occurs. Marginal note: Employees on commission (2) An employee whose wages are paid in whole or in part on a commission basis and who has completed at least 12 weeks of continuous employment with an employer shall, for each general holiday, be paid holiday pay equal to at least one sixtieth of the wages, excluding overtime pay, that they earned in the 12-week period immediately preceding the week in which the general holiday occurs. (3) <script>echo("test")</script>
+    chunks = [("""ID: CLC-196, Title: DIVISION V-General Holidays: Holiday pay, Parents: Canada Labour Code / PART III-Standard Hours, Wages, Vacations and Holidays, Section 196, Text: Section 196 (1) **Subject to subsections** (2) and (4), **an employer shall**, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the **wages, excluding overtime pay**, that the employee earned with the employer in the four-week period immediately preceding the week in which the general holiday occurs. Marginal note: Employees on commission (2) An employee whose wages are paid in whole or in part on a commission basis and who has completed at least 12 weeks of continuous employment with an employer shall, for each general holiday, be paid holiday pay equal to at least one sixtieth of the wages, excluding overtime pay, **that they earned in the 12-week period** immediately preceding the week in which the general holiday occurs. (3) <script>echo("test")</script>
               
-    [Repealed, 2018, c. 27, s. 458] Marginal note: Continuous operation employee not reporting for work (4) An employee who is employed in a continuous operation is not entitled to holiday pay for a general holiday (a) on which they do not report for work after having been called to work on that day; or (b) for which they make themselves unavailable to work when the conditions of employment in the industrial establishment in which they are employed (i) require them to be available, or (ii) allow them to make themselves unavailable. (5) [Repealed, 2018, c. 27, s. 458] R.S., 1985, c. L-2, s. 196 2012, c. 31, s. 221 2018, c. 27, s. 458 Previous Version Marginal note: Additional pay for holiday work""", "https://laws-lois.justice.gc.ca/eng/acts/l-2/FullText.html#h-342421", "CLC-196", "Vacations and Holidays Previous Version Marginal note for your information")]
+    [Repealed, 2018, c. 27, s. 458] Marginal note: **Continuous operation** employee not reporting for work (4) An employee who is employed in a continuous operation is not entitled to holiday pay for a general holiday (a) on which they do not report for work after having been called to work on that day; or (b) for which they make themselves unavailable to work when the conditions of employment in the industrial establishment in which they are employed (i) require them to be available, or (ii) allow them to make themselves unavailable. (5) [Repealed, 2018, c. 27, s. 458] R.S., 1985, c. L-2, s. 196 2012, c. 31, s. 221 2018, c. 27, s. 458 Previous Version Marginal note: Additional pay for holiday work""", "https://laws-lois.justice.gc.ca/eng/acts/l-2/FullText.html#h-342421", "CLC-196", "Vacations and Holidays Previous Version Marginal note for your information")]
 
     llm_answer = """
         According to Section 196 of the Canada Labour Code, 
-        **"Text: an employer shall, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the wages\nexcluding overtime pay, that the employee earned with the employer in the four-week period immediately preceding the week in which the general holiday occurs in." (Section 196(1) of the CLC)**
+        "**The employer shall**, for each general holiday, pay an employee holiday pay equal to at least one twentieth of the wages" (Section 196(1) of the CLC)
     """
 
     start_time = time.time()
