@@ -24,39 +24,36 @@ def fetch_documents_from_database_simplified(database_question,
 
 if __name__ == "__main__":
 
-    related_example1 = '''The Code provides for up to 17 weeks of maternity leave. 
-    However, the total duration of the maternity and the parental leaves must not exceed 78 weeks when the parental leave is not shared. 
-    The total duration of the maternity and the parental leaves must not exceed 86 weeks when the parental leave is shared.'''
+    from operator import itemgetter
+    import random
+    from scipy import stats
 
-    docs, metadata, ids, distances = fetch_documents_from_database_simplified(related_example1, language="en", db_name="Labour")
-    print(f"Related example 1: {distances}")
+    labour_collection = _load_vector_database(language="en", db_name="Labour")
+    collection_chunks_count = labour_collection.count()
 
-    unrelated_example1 = '''Those voices are known as auditory hallucinations — a hallmark of psychosis. 
-    When they became more frequent and insistent, he went to the Centre for Addiction and Mental Health for an assessment.'''
+    all_docs = labour_collection.get()["documents"]
 
-    docs, metadata, ids, distances = fetch_documents_from_database_simplified(unrelated_example1, language="en", db_name="Labour")
-    print(f"Unrelated example 1: {distances}")
-
-    related_example2 = '''(2) Subject to subsection (3), the members of the Board other than the Chairperson and 
-    the Vice-Chairpersons are to be appointed by the Governor in Council on the recommendation of the Minister 
-    after consultation by the Minister with the organizations representative of employees or employers that the 
-    Minister considers appropriate, to hold office during good behaviour for terms not exceeding three years each, 
-    subject to removal by the Governor in Council at any time for cause.'''
-
-    docs, metadata, ids, distances = fetch_documents_from_database_simplified(related_example2, language="en", db_name="Labour")
-    print(f"Related example 2: {distances}")
-
-
-    labour_db = _load_vector_database(language="en", db_name="Labour")
-
-    first_100 = labour_db.get(limit=100)["documents"]
-    print(first_100)
+    # Let's make sure there's enough diversity in this sample
+    rnd_ix = random.choices(range(collection_chunks_count+1), k=100)
+    rnd_sample = itemgetter(*rnd_ix)(all_docs)
 
     non_identical_matches = 0
-    for i in first_100:
-        docs, metadata, ids, distances = fetch_documents_from_database_simplified(i, language="en", db_name="Labour")
-        print(f"Literal document chunk inner product distance: {distances}")
-        if i[:100]!=docs[0][:100]:
+    ip_distances_with_identical_first_match = []
+    dist_description = []
+    for i in rnd_sample:
+        docs, metadata, ids, distances = fetch_documents_from_database_simplified(i, language="en", db_name="Labour", n_results=50)
+        print(f"Literal document chunk cosine distance: {[format(d, '.2f') for d in distances]}")
+        if i[:100]!=docs[0][:100]: # that's where we determine identity
             print(f"Original doc: {i[:100]}\nRetrieved doc: {docs[0][:100]}")
             non_identical_matches+=1
-    print(f"Non-identical document chunks matched for first 100 documents in collection: {non_identical_matches}")
+        else:
+            ip_distances_with_identical_first_match.append(distances)
+            dist_description.append(stats.describe(distances))
+    print(f"\n\nNon-identical document chunks matched for first 100 documents in collection: {non_identical_matches}")
+
+    # for d in dist_description:
+    #     print(f"\n{d}")
+    
+    # with open("./documents_similarity_stats.csv", "w") as file:
+    #     for d in dist_description:
+    #         file.writelines(str(d)+"\n")

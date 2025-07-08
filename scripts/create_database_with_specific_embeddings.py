@@ -1,13 +1,12 @@
 import csv
-from dataclasses import fields
 import os
 
 import chromadb
+import numpy as np
 import pandas as pd
 from time import time
 
 import sys
-import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Add the parent directory to sys.path
 from config import ChromaDBSettings
 from db_config import EmbeddingModel, VectorDBDataFiles
@@ -17,7 +16,8 @@ def main(collection_name:str,
          data_files_tuples:list[tuple[str, bool]],
          model:EmbeddingModel,
          distance_func:str,
-         current_language:str
+         current_language:str,
+         normalize=False
          ):
     
 
@@ -30,8 +30,8 @@ def main(collection_name:str,
     # fetch or create collection
     collection = client.get_or_create_collection(name=collection_name,
                                                     embedding_function=model.model_chroma_callable,
-                                                    metadata={
-                                                    "hnsw:space":distance_func,
+                                                    configuration={"hnsw": {"space": distance_func,     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
+                                                                            "ef_construction": 1000},
                                                 })
 
     # Process CSV data and upsert it into the ChromaDB collection
@@ -131,6 +131,9 @@ def main(collection_name:str,
 
         # Generate embeddings and upsert to collection in batches
         embeddings = model.model_chroma_callable(augmented_passages)
+
+        if normalize:
+            embeddings = embeddings / np.linalg.norm(embeddings)
         
         # Upsert to collection
         collection.upsert(
@@ -259,7 +262,7 @@ if __name__ == "__main__":
                 db_path=ChromaDBSettings.directory_path,
                 data_files_tuples=data_files_tuples,
                 model=selected_model,
-                distance_func="ip", # passed to chromadb's get_or_create_collection method, one of ["l2", "ip", "cosine"]
+                distance_func="cosine", # one of ["l2", "ip", "cosine"] --> here we want "cosine" because we don't care about magnitude, only direction
                 current_language=language
             )
         
