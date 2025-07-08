@@ -47,3 +47,16 @@ if __name__ == "__main__":
     print(f"Related example 2: {distances}")
 
 
+    labour_db = _load_vector_database(language="en", db_name="Labour")
+
+    first_100 = labour_db.get(limit=100)["documents"]
+    print(first_100)
+
+    non_identical_matches = 0
+    for i in first_100:
+        docs, metadata, ids, distances = fetch_documents_from_database_simplified(i, language="en", db_name="Labour")
+        print(f"Literal document chunk inner product distance: {distances}")
+        if i[:100]!=docs[0][:100]:
+            print(f"Original doc: {i[:100]}\nRetrieved doc: {docs[0][:100]}")
+            non_identical_matches+=1
+    print(f"Non-identical document chunks matched for first 100 documents in collection: {non_identical_matches}")
