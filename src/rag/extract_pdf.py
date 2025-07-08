@@ -5,10 +5,13 @@ import shutil
 from rag.page_utils import Page, chunk_text, save_to_csv
 import requests
 
+def format_header_group(group_text, tag, page_number):
+    return f"#{tag}#{group_text.strip()}/{page_number}#{tag}#"
+
 def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_limit):
     md_pages = pymupdf4llm.to_markdown(file_path, page_chunks=True)
 
-    is_consider_bulletpoints_subheaders = True
+    is_consider_emphasis_subheaders = True
 
     processed_pages = []
     for md_page in md_pages:
@@ -28,26 +31,21 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
                 # Get the number of # characters
                 header_level = len(header_match.group(1))
 
-                # Remove the # and * characters and any leading spaces
-                clean_line = line.lstrip('# *').strip(" *")
-
                 tag = f'h{header_level}'
-                processed_lines.append(f"#{tag}#{clean_line}/{page_number}#{tag}#")
-                
-            # Check for bullet points if is_consider_bulletpoints_subheaders is True
-            elif is_consider_bulletpoints_subheaders:
-                # Match lines that start with ** and end with **, ignoring non-alphanumerical characters at start
-                bullet_match = re.match(r'^[^a-zA-Z0-9]*\*\*(.*)\*\*(.*)', line)
-                if bullet_match:
-                    # Extract the content between **
-                    bullet_content = bullet_match.group(1)
-                    after_bullet_content = bullet_match.group(2)
 
-                    processed_lines.append(f"#h4#{bullet_content}/{page_number}#h4#")
-                    if after_bullet_content:
-                        processed_lines.append(after_bullet_content)
-                else:
-                    processed_lines.append(line)
+                # If line with header contains **, end the header at the end of the emphasis
+                formatted_line = re.sub(r'^#+\s\*\*(.*)\*\*', lambda x: format_header_group(x.group(1), tag, page_number), line)
+
+                # If line with header had no emphasis, end it at the end of the line
+                formatted_line = re.sub(r'^#+\s(.*?)$', lambda x: format_header_group(x.group(1), tag, page_number), formatted_line)
+
+                processed_lines.append(formatted_line)
+                
+            # Check for Emphasis at the start of the line if is_consider_emphasis_subheaders is True
+            elif is_consider_emphasis_subheaders:
+                # Replace text that start with ** and end with **, ignoring non-alphanumerical characters at start
+                formatted_line = re.sub(r'^[^a-zA-Z0-9]*\*\*(.*?)\*\*', lambda x: format_header_group(x.group(1), "h4", page_number), line)
+                processed_lines.append(formatted_line.strip())
             else:
                 processed_lines.append(line)
         
@@ -59,6 +57,21 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
 
         # Remove all instances of 3 or more newlines
         processed_page = re.sub(r'\n{3,}', '\n\n', processed_page)
+
+        # Remove all instances of 2 or more tildes in a row
+        processed_page = re.sub(r'~{2,}', '', processed_page)
+
+        # Replace <br> with a space
+        processed_page = re.sub(r'<br\s*/?>', ' ', processed_page)
+
+        # Remove all instances of •
+        processed_page = re.sub(r'•', '', processed_page)
+
+        # Remove all instances of 2 or more * in a row
+        processed_page = re.sub(r'\*{2,}', '', processed_page)
+
+        # Replace all instances of more than 1 space with a single space
+        processed_page = re.sub(r'\s{2,}', ' ', processed_page)
 
         processed_pages.append(processed_page)
 
