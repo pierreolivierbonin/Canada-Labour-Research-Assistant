@@ -58,17 +58,11 @@ def process_pdf(file_name, file_path, url, selected_tokenizer, selected_token_li
         # Remove all instances of 3 or more newlines
         processed_page = re.sub(r'\n{3,}', '\n\n', processed_page)
 
-        # Remove all instances of 2 or more tildes in a row
-        processed_page = re.sub(r'~{2,}', '', processed_page)
-
         # Replace <br> with a space
         processed_page = re.sub(r'<br\s*/?>', ' ', processed_page)
 
-        # Remove all instances of •
-        processed_page = re.sub(r'•', '', processed_page)
-
-        # Remove all instances of 2 or more * in a row
-        processed_page = re.sub(r'\*{2,}', '', processed_page)
+        # Remove all instances of •, * or _
+        processed_page = re.sub(r'[•*_~]', '', processed_page)
 
         # Replace all instances of more than 1 space with a single space
         processed_page = re.sub(r'\s{2,}', ' ', processed_page)
