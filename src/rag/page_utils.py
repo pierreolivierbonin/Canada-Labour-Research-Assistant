@@ -4,6 +4,8 @@ import csv
 from dataclasses import dataclass
 import re
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from contextlib import contextmanager
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))  # Add the parent directory to sys.path
@@ -28,6 +30,11 @@ class Page:
     chunks: List[TextChunk]
     date_modified: str
         
+# Context manager to safely handle BeautifulSoup objects and prevent GeneratorExit when using ThreadPoolExecutor.
+@contextmanager
+def safe_beautifulsoup(content):
+    yield BeautifulSoup(content, 'html.parser')
+
 def get_base_url(url: str) -> str:
     parsed_url = urlparse(url)
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}" if parsed_url.scheme else parsed_url.netloc
@@ -111,7 +118,11 @@ def format_header(header: str) -> str:
     if last_slash_position != -1:
         header = header[:last_slash_position]
 
-    return header.upper()
+    # Capitalize the first word if not already
+    if len(header) > 0 and not header[0].isupper():
+        header = header[0].upper() + header[1:]
+
+    return "**" + header + "**"
 
 def chunk_text(text: str, tokenizer, token_limit: int) -> List[TextChunk]:
     chunks = []

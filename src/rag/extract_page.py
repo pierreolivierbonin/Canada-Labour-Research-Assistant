@@ -9,12 +9,11 @@ For each page it:
 """
 
 import requests
-from bs4 import BeautifulSoup
 from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import os
 
-from rag.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv, get_base_url
+from rag.page_utils import Page, extract_date_modified, chunk_text, extract_main_content, save_to_csv, get_base_url, safe_beautifulsoup
 
 MAX_BATCH_SIZE = 10
 PROCESSED_LINKS = set()
@@ -88,32 +87,32 @@ def process_page(url: str, current_depth: int, tokenizer, token_limit: int, curr
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.content, 'html.parser')
-        title = extract_title(soup)
+        with safe_beautifulsoup(response.content) as soup:
+            title = extract_title(soup)
         
-        # Check for table of contents if not skipping
-        if save_html:
-            # Save HTML content with title
-            save_html_content(response.text, title, current_language, database_name)
-        
-        # Check for table of contents if not skipping
-        if not skip_toc:
-            toc_links = extract_toc_links(soup, base_url)
-            if toc_links:
-                print(f"Found table of contents in {url}, processing sub-pages...")
-                for full_url in toc_links:
-                    if full_url not in PROCESSED_LINKS:
-                        PROCESSED_LINKS.add(full_url) # Mark as processed
-                        processed_pages = process_page(full_url, current_depth, tokenizer, token_limit, current_language, database_name, save_html, blacklist_urls, skip_toc=True)
-                        current_processed_pages.extend(processed_pages)
-                return current_processed_pages
-        
-        # Extract page components
-        hierarchy, url_hierarchy = extract_hierarchy(soup)
-        date_modified = extract_date_modified(soup)
+            # Check for table of contents if not skipping
+            if save_html:
+                # Save HTML content with title
+                save_html_content(response.text, title, current_language, database_name)
+            
+            # Check for table of contents if not skipping
+            if not skip_toc:
+                toc_links = extract_toc_links(soup, base_url)
+                if toc_links:
+                    print(f"Found table of contents in {url}, processing sub-pages...")
+                    for full_url in toc_links:
+                        if full_url not in PROCESSED_LINKS:
+                            PROCESSED_LINKS.add(full_url) # Mark as processed
+                            processed_pages = process_page(full_url, current_depth, tokenizer, token_limit, current_language, database_name, save_html, blacklist_urls, skip_toc=True)
+                            current_processed_pages.extend(processed_pages)
+                    return current_processed_pages
+            
+            # Extract page components
+            hierarchy, url_hierarchy = extract_hierarchy(soup)
+            date_modified = extract_date_modified(soup)
 
-        # Extract main content
-        text, linked_pages = extract_main_content(soup)
+            # Extract main content
+            text, linked_pages = extract_main_content(soup)
 
         if not text:
             print(f"Warning: No text found for {url}, skipping chunking")

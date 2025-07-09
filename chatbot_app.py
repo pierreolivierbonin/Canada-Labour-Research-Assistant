@@ -27,7 +27,11 @@ class App:
 
         self.model = self.config.default_model_local if not self.is_remote else self.config.default_model_remote
         self.nb_previous_questions = self.config.nb_previous_questions
-        self.db_name = self.config.db_name
+
+        databases = VectorDBDataFiles.databases
+
+        # The first db where is_default is True (first one otherwise)
+        self.db_name = next((db for db in databases if db.get("is_default", False)), databases[0] if len(databases) > 0 else None)
 
         self.quotations_mode_status = QuotationsConfig.direct_quotations_mode
         user_language = "fr" if st.context.locale and st.context.locale.startswith('fr') else "en"
@@ -86,15 +90,24 @@ class App:
                                 options=model_shortlist, 
                                 index=model_shortlist.index(default_model))
             
-            orig_db_list = list([db["name"] for db in VectorDBDataFiles.databases])
-            
-            translated_db_list = [self.translator.get(f'databases.{db_name}') for db_name in orig_db_list]
-            translated_db_name = self.translator.get(f'databases.{self.db_name}')
-            
+            databases = VectorDBDataFiles.databases
+
+            def translate_db_name(db):
+                # Try to get the current language, if not available, get the first available language
+                if st.session_state.language in db["ressource_name"]:
+                    return db["ressource_name"][st.session_state.language]
+                else:
+                    # Get the first available language from the dictionary
+                    return next(iter(db["ressource_name"].values()))
+
+            translated_db_list = [translate_db_name(db) for db in databases]
+            translated_db_name = translate_db_name(self.db_name)
+
             selected_db_name = st.selectbox(label=self.translator.get('sidebar.db_name'), 
                                 options=list(translated_db_list), 
                                 index=translated_db_list.index(translated_db_name))
             
+            orig_db_list = list([db["name"] for db in VectorDBDataFiles.databases])
             self.db_name = orig_db_list[translated_db_list.index(selected_db_name)]
             
             sources_number = st.number_input(self.translator.get('sidebar.sources_prompt'), 
@@ -343,7 +356,6 @@ if __name__ == '__main__':
     location_mode_name = "Remote" if is_remote else "Local"
     hyperparams = vLLMRAGConfig.HyperparametersAccuracyConfig if is_vllm else OllamaRAGConfig.HyperparametersAccuracyConfig
     engine = "vllm" if is_vllm else "ollama"
-
 
     if is_profiling:
 

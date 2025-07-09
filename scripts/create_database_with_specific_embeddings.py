@@ -5,6 +5,7 @@ import os
 import chromadb
 import pandas as pd
 from time import time
+import re
 
 import sys
 import os
@@ -102,12 +103,15 @@ def main(collection_name:str,
             for _, chunk in chunks_df.iterrows():
                 page_id = chunk['page_id']
                 page_meta = page_metadata[page_id]
+
+                # Capitalize text within emphasis markdown (**...**), but only for the embeddings
+                formatted_text = re.sub(r'\*\*(.*?)\*\*', lambda x: x.group(1).upper(), chunk['text'])
                 
                 # Create augmented passage for chunk
                 chunk_fields = {
                     "Title": page_meta['title'],
                     "Hierarchy": page_meta['hierarchy'],
-                    "Text": chunk['text']
+                    "Text": formatted_text
                 }
                 
                 augmented_passages.append(

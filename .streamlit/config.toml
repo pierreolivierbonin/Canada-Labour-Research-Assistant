@@ -10,4 +10,4 @@ level = "info"
 [server]
 headless = false
 runOnSave = true
-
+enableStaticServing = true

@@ -50,7 +50,6 @@ class ChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     models_shortlist_remote = [default_model_remote]
     language = "en"
     nb_previous_questions = 0
-    db_name = "labour"
 
 @dataclass
 class vLLMChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
@@ -62,7 +61,6 @@ class vLLMChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     models_shortlist_remote = ["meta-llama/Llama-4-Scout-17B-16E-Instruct"]
     language = "en"
     nb_previous_questions = 0
-    db_name = "labour"
 
 @dataclass
 class Evaluation:
@@ -77,7 +75,7 @@ class Evaluation:
 @dataclass
 class QuotationsConfig:
     threshold_rouge_score = 0.5 # Determine how close to the LCS in the source documents a quote has to be in order to be replaced by it (that is, in order to create a colored citation).
-    min_non_header_words_in_quote = 9
+    min_words_in_quote = 9
     direct_quotations_mode = True
 
 @dataclass
