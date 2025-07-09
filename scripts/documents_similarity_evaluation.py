@@ -68,12 +68,12 @@ if __name__ == "__main__":
             non_identical_matches+=1
         else:
             ip_distances_with_identical_first_match.append(results["distances"])
-            dist_description.append(stats.describe(results["distances"]))
+            dist_description.append(stats.describe(results["distances"][0]))
     print(f"\n\nNon-identical document chunks matched for the random sample of 100 documents in collection: {non_identical_matches}")
 
-    # for d in dist_description:
-    #     print(f"\n{d}")
+    for d in dist_description:
+        print(f"\n{d}")
     
-    # with open("./documents_similarity_stats.csv", "w") as file:
-    #     for d in dist_description:
-    #         file.writelines(str(d)+"\n")
+    with open("./documents_similarity_stats.csv", "w") as file:
+        for d in dist_description:
+            file.writelines(str(d)+"\n")
