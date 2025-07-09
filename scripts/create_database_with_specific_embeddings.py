@@ -265,7 +265,7 @@ if __name__ == "__main__":
                 model=selected_model,
                 distance_func="cosine", # one of ["l2", "ip", "cosine"] --> make sure it is natively supported by the embedding model (https://www.sbert.net/docs/sentence_transformer/pretrained_models.html)
                 current_language=language,
-                normalize=True
+                normalize=False
             )
         
             end_time = time()

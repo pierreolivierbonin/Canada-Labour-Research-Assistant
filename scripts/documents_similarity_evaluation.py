@@ -30,22 +30,23 @@ if __name__ == "__main__":
     from chromadb.config import Settings
     from scipy import stats
 
+    from config import ChromaDBSettings
     from db_config import EmbeddingModel, ModelsConfig
     from tools import _load_vector_database
 
     # First run 'create_database_with_specific_embeddings' as a standalone script (i.e. from itself so it can execute the if name block)
     ...
 
-    # fetch all collection names
-    client = chromadb.PersistentClient(path="./chroma_vectorDB",
-                                       settings=Settings(anonymized_telemetry=False))
-    collections = client.list_collections()
-    print(collections)
-
-    # Then load the collection of interest and all its chunks
+    # create client
+    client = chromadb.PersistentClient(path=ChromaDBSettings.directory_path)
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
     selected_model.assign_model_and_attributes()
-    labour_collection = client.get_collection("all-mpnet-base-v2_labour", embedding_function=selected_model.model_chroma_callable)
+
+    # Then load the collection of interest and all its chunks
+    labour_collection = client.get_or_create_collection("all-mpnet-base-v2_labour", 
+                                                        embedding_function=selected_model.model_chroma_callable,
+                                                        configuration={"hnsw": {"space": "cosine",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
+                                                                        "ef_construction": 1000}})
     collection_chunks_count = labour_collection.count()
 
     all_docs = labour_collection.get()["documents"] # that's 1461 chunks
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     print(f"\n\nNon-identical document chunks matched for the random sample of 100 documents in collection: {non_identical_matches}")
 
     # for d in dist_description:
-    #     print(f"\n{d}")e
+    #     print(f"\n{d}")
     
     # with open("./documents_similarity_stats.csv", "w") as file:
     #     for d in dist_description:

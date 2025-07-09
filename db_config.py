@@ -22,7 +22,7 @@ the highest on the MTEB, using the following filters:
 
 @dataclass
 class ModelsConfig:
-    models={"multi_qa":"multi-qa-mpnet-base-dot-v1",
+    models={"multi_qa":{"name":"multi-qa-mpnet-base-dot-v1", "score_function":"ip"},
             "mpnet":"all-mpnet-base-v2", 
             "biling_lg":"Lajavaness/bilingual-embedding-large"}
     
