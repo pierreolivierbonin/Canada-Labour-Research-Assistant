@@ -172,10 +172,51 @@ Once this setup completed, you will be able to switch to **remote mode** via the
 
 </details>
 
+<!-- CREATE DATABASE -->
+## Database Creation
+
+The application can be customized for your own use case by creating new databases. Here's how to set up your own knowledge base:
+
+### Configuration
+
+1. **Edit the database configuration** in [`db_config.py`](./db_config.py), inside the 'VectorDBDataFiles' dataclass.
+2. **Configure database metadata**:
+   - **`is_default`**: Set to `True` to make this database the default selection in the UI.
+   - **`languages`**: List of language codes (e.g., `["en", "fr"]`) that your database supports.
+   - **`ressource_name`**: Dictionary mapping language codes to display names for the UI (e.g., `{"en": "Labour", "fr": "Travail"}`).
+3. **Add your data sources** using these supported formats.
+   - **Web pages**: Add URLs under the `"page"` key, organized by language
+   - **Legal pages**: Add law URLs under the `"law"` key, organized by language
+   - **IPG pages**: Add IPG URLs under the `"ipg"` key, organized by language
+   - **PDF files**: Add URLs or local file paths under the `"pdf"` key, organized by language
+   - **Note**: Data sources must be organized by language codes (e.g., `"en"`, `"fr"`). You can support one or more languages per database:
+
+### Supported Data Sources
+
+- **External PDFs**: Direct URLs to PDF files
+- **Local PDFs**: File paths to local PDFs (supports folder paths to include all PDFs in a directory)
+- **Web pages**: URLs to web content (supports blacklisting specific pages)
+
+### Building Your Database
+
+Run the database creation script:
+```bash
+./setup/create_or_update_database.sh
+```
+
+This script will:
+1. Extract content from all configured sources
+2. Process and chunk the documents
+3. Create a vector database for RAG (Retrieval-Augmented Generation)
+
+### File Management
+
+- **PDF files** are automatically downloaded to the `static/` folder for offline access
+- **Static files** are accessible via `app/static/...` URLs within the application
+- **Note**: Removing a database from the config file doesn't delete its files from the `static/` folder
+
 <!-- USAGE EXAMPLES -->
 ## Use Case and Portability
-You can use this solution for your own use case by changing the hyperlinks of the [WebCrawlConfig](./src/db_config.py). Then, you extract the text you need, and create a vector database for Retrieval-Augmented Generation. 
-
 The solution is designed so you can easily verify the information used by the LLM to construct its responses. To do so, 'direct quotations' mode will format and highlight relevant passages taken from the sources. You can click on these passages to directly go to the source and validate the information. 
 
 Using the current configuration of for webcrawling, you can create two distinct databases and swap between each of them in the UI. Each database includes the following documents:
