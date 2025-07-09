@@ -189,7 +189,7 @@ def main(collection_name:str,
                 collection_already_exists = True
 
     if collection_already_exists:
-        print("Collection already exist. Records upserted but tracker 'collections.csv' remains untouched.")
+        print("Collection already exists. Records upserted but tracker 'collections.csv' remains untouched.")
     else:
         with open("collections.csv", 'a', newline='', encoding="utf-8") as f:
             if needs_newline:
@@ -204,12 +204,13 @@ def main(collection_name:str,
 
 def get_error_message_for_mismatch_in_languages(db_name, data_type):
     return f"Error: Mismatch in the number of languages for the {data_type} in db '{db_name}'"
+    
 
 if __name__ == "__main__":
 
     from db_config import EmbeddingModel, ModelsConfig
     
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
+    selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
     selected_model.assign_model_and_attributes()
 
     databases = VectorDBDataFiles.databases
@@ -262,8 +263,9 @@ if __name__ == "__main__":
                 db_path=ChromaDBSettings.directory_path,
                 data_files_tuples=data_files_tuples,
                 model=selected_model,
-                distance_func="cosine", # one of ["l2", "ip", "cosine"] --> here we want "cosine" because we don't care about magnitude, only direction
-                current_language=language
+                distance_func="cosine", # one of ["l2", "ip", "cosine"] --> make sure it is natively supported by the embedding model (https://www.sbert.net/docs/sentence_transformer/pretrained_models.html)
+                current_language=language,
+                normalize=True
             )
         
             end_time = time()

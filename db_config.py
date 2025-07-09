@@ -167,8 +167,11 @@ class EmbeddingModel:
 if __name__ == "__main__":
         
     for k, v in ModelsConfig.models.items():
-        model = EmbeddingModel(model_name=ModelsConfig.models[k], trust_remote_code=True)
-        model.assign_model_and_attributes()
-        print(f"\nModel name: {model.model_name}")
-        print(f"Model max sequence length: {model.max_seq_length}")
-        print(f"Model embedding dimensions: {model.dimensions}")
+        try:
+            model = EmbeddingModel(model_name=ModelsConfig.models[k], trust_remote_code=True)
+            model.assign_model_and_attributes()
+            print(f"\nModel name: {model.model_name}")
+            print(f"Model max sequence length: {model.max_seq_length}")
+            print(f"Model embedding dimensions: {model.dimensions}")
+        except Exception as e:
+            print(e)
