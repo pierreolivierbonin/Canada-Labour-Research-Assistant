@@ -18,7 +18,8 @@ def main(collection_name:str,
          model:EmbeddingModel,
          distance_func:str,
          current_language:str,
-         normalize=False
+         normalize=False,
+         preview=False
          ):
     
 
@@ -147,22 +148,24 @@ def main(collection_name:str,
     for file_path, has_section_nb in data_files_tuples:
         process_and_upsert_data(collection, file_path, has_section_nb)
 
-    # quick check if the output makes sense
-    queries = [
-        "What are the rules applying to maternity leave?",
-        "What does the notion of averaging of hours mean for federally regulated employers?",
-        "What is constructive dismissal?",
-        "What is the definition of danger?",
-        "How to prevent harmful behaviour at work?"
-    ]
+    if preview:
+        # quick check if the output makes sense
+        queries = [
+            "What are the rules applying to maternity leave?",
+            "What does the notion of averaging of hours mean for federally regulated employers?",
+            "What is constructive dismissal?",
+            "What is the definition of danger?",
+            "How to prevent harmful behaviour at work?"
+        ]
 
-    results = collection.query(
-        query_texts=queries,        # Chroma will embed these for you
-        n_results=3,                # how many results to return
-        include=["metadatas", "distances", "embeddings"]
-    )
+        results = collection.query(
+            query_texts=queries,        # Chroma will embed these for you
+            n_results=3,                # how many results to return
+            include=["metadatas", "distances", "embeddings"]
+        )
 
-    print(results.items()) # quick look at the results
+        print(results.items()) # quick look at the results
+
     print(f"\n\nCollection created: {collection_name}")
     print("File 'collections.csv' already exists: ", os.path.exists(os.path.join(os.getcwd(), "collections.csv")))
 
@@ -212,7 +215,6 @@ if __name__ == "__main__":
     from db_config import EmbeddingModel, ModelsConfig
     
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
 
     databases = VectorDBDataFiles.databases
 
@@ -266,7 +268,8 @@ if __name__ == "__main__":
                 model=selected_model,
                 distance_func="cosine", # one of ["l2", "ip", "cosine"] --> make sure it is natively supported by the embedding model (https://www.sbert.net/docs/sentence_transformer/pretrained_models.html)
                 current_language=language,
-                normalize=False
+                normalize=False,
+                preview=False
             )
         
             end_time = time()

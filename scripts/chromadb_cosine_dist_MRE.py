@@ -1,3 +1,7 @@
+'''
+This experiment takes into account issues detailed in https://arxiv.org/pdf/2403.05440v1
+'''
+
 import sys
 sys.path.append("./")
 

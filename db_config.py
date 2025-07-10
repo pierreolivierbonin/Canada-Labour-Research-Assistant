@@ -26,9 +26,9 @@ class ModelsConfig:
             "mpnet":"all-mpnet-base-v2", 
             "biling_lg":"Lajavaness/bilingual-embedding-large"}
     
-    models_similarity_fn={"multi_qa":"ip",
-                          "mpnet":"cosine",
-                          "biling_lg":"N/A"}
+    models_similarity_fn={"multi-qa-mpnet-base-dot-v1":"ip",
+                          "all-mpnet-base-v2":"cosine",
+                          "Lajavaness/bilingual-embedding-large":"N/A"}
     
     models_untested={"inf_retriever":"infly/inf-retriever-v1-1.5b", 
                      "qwen2_small":"Alibaba-NLP/gte-Qwen2-1.5B-instruct",
@@ -174,6 +174,9 @@ class EmbeddingModel:
             self.dimensions=self.model.get_sentence_embedding_dimension()
         except Exception as e:
             print(e)
+        if self.model.similarity_fn_name is None:
+            self.model.similarity_fn_name = ModelsConfig.models_similarity_fn[model_name]
+            print(f"Model similarity function name: {self.model.similarity_fn_name}")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,8 @@
+'''
+This experiment takes into account issues detailed in https://arxiv.org/pdf/2403.05440v1
+'''
+
+
 import sys
 sys.path.append("./")
 
@@ -47,8 +52,25 @@ if __name__ == "__main__":
                                                         configuration={"hnsw": {"space": "cosine",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": 1000}})
     collection_chunks_count = labour_collection.count()
-
     all_docs = labour_collection.get()["documents"] # that's 1461 chunks
+
+    # Generic clone because 'embeddings' in all-mpnet-base-v2_labour are not a direct representation of 'documents' (see create_database_with_specific_embeddings.py)
+    client = chromadb.PersistentClient(path="ChromaDBSettings.directory_path", settings=Settings(anonymized_telemetry=False))
+    baseline_labour_collection = client.get_or_create_collection("labour_baseline", 
+                                                        embedding_function=selected_model.model_chroma_callable,
+                                                        configuration={"hnsw": {"space": "cosine",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
+                                                                        "ef_construction": 1000}})
+    
+    embeddings = []
+    ids = []
+    for ix, i in enumerate(all_docs):
+        embeddings.append(selected_model.model_chroma_callable(i))
+        ids.append("id"+str(ix))
+        print(i[:50]+f"... successfully embedded! ({ix}/{len(all_docs)}) ---> {ix/len(all_docs)*100:.2f}% completed.")
+
+    baseline_labour_collection.upsert(embeddings=embeddings,
+                                      documents=all_docs,
+                                      ids=ids)
 
     # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks
     random.seed(1837)
@@ -60,7 +82,8 @@ if __name__ == "__main__":
     ip_distances_with_identical_first_match = []
     dist_description = []
     for i in rand_sample:
-        results = labour_collection.query(query_texts=i, n_results=50)
+
+        results = baseline_labour_collection.query(query_texts=i, n_results=50, include=["documents", "distances"])
         print(f"\nDocument chunk cosine distances: {[format(d, '.2f') for d in results["distances"][0]]}")
         if i!=results["documents"][0][0]: # that's where we validate that a candidate chunk and the first match are identical
             print(f"\nInconsistent search detected - Document chunk matched with non-identical chunk\nOriginal doc: {i[:100]}\nRetrieved doc: {results["documents"][0][0][:100]}")
