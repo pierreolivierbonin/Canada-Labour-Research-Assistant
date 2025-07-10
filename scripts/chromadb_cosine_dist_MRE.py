@@ -63,7 +63,7 @@ def MRE_ip():
     # fetch or create collection
     collection = client.get_or_create_collection(name="MRE_cosine_distance",
                                                     embedding_function=selected_model.model_chroma_callable,
-                                                    configuration={"hnsw": {"space": "cosine",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
+                                                    configuration={"hnsw": {"space": "ip",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                             "ef_construction": 1000},
                                                 })
 
