@@ -38,9 +38,8 @@ if __name__ == "__main__":
     ...
 
     # create client
-    client = chromadb.PersistentClient(path=ChromaDBSettings.directory_path)
+    client = chromadb.PersistentClient(path=ChromaDBSettings.directory_path, settings=Settings(anonymized_telemetry=False))
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
 
     # Then load the collection of interest and all its chunks
     labour_collection = client.get_or_create_collection("all-mpnet-base-v2_labour", 

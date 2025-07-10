@@ -26,6 +26,10 @@ class ModelsConfig:
             "mpnet":"all-mpnet-base-v2", 
             "biling_lg":"Lajavaness/bilingual-embedding-large"}
     
+    models_similarity_fn={"multi_qa":"ip",
+                          "mpnet":"cosine",
+                          "biling_lg":"N/A"}
+    
     models_untested={"inf_retriever":"infly/inf-retriever-v1-1.5b", 
                      "qwen2_small":"Alibaba-NLP/gte-Qwen2-1.5B-instruct",
                      "qwen2_large": "Alibaba-NLP/gte-Qwen2-7B-instruct",
@@ -155,23 +159,35 @@ class EmbeddingModel:
     def __init__(self, model_name:str, trust_remote_code:bool=False):
         self.model_name = model_name
         self.trust_remote_code = trust_remote_code
-
-    def assign_model_and_attributes(self):
         self.model=SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code)
         self.model_chroma_callable=CustomEmbeddingFunction(model_name=self.model_name, trust_remote_code=self.trust_remote_code)
-        self.max_seq_length=self.model.max_seq_length         
-        self.used_seq_length=self.model.max_seq_length
-        self.dimensions=self.model.get_sentence_embedding_dimension()
+
+        try:
+            self.max_seq_length=self.model.max_seq_length
+        except Exception as e:
+            print(e)
+        try:
+            self.used_seq_length=self.model.max_seq_length
+        except Exception as e:
+            print(e)
+        try:
+            self.dimensions=self.model.get_sentence_embedding_dimension()
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
         
     for k, v in ModelsConfig.models.items():
         try:
-            model = EmbeddingModel(model_name=ModelsConfig.models[k], trust_remote_code=True)
-            model.assign_model_and_attributes()
-            print(f"\nModel name: {model.model_name}")
-            print(f"Model max sequence length: {model.max_seq_length}")
-            print(f"Model embedding dimensions: {model.dimensions}")
+            model_instance = EmbeddingModel(model_name=v, trust_remote_code=True)
+            print(f"\nModel name: {model_instance.model_name}")
+            print(f"Model max sequence length: {model_instance.max_seq_length}")
+            print(f"Model embedding dimensions: {model_instance.dimensions}")
+            if model_instance.model.similarity_fn_name is not None:
+                print(f"Model similarity function name: {model_instance.model.similarity_fn_name}")
         except Exception as e:
-            print(e)
+            print("\n"+ str(e))
+        if model_instance.model.similarity_fn_name is None:
+            model_instance.similarity_fn_name = ModelsConfig.models_similarity_fn[k]
+            print(f"Model similarity function name: {model_instance.similarity_fn_name}")
