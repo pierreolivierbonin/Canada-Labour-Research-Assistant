@@ -54,10 +54,6 @@ def MRE_cosine():
     print(f"\nCosine distance, identical document: {results["distances"][0][0]}")
     assert results["distances"][0][0]==0.0
 
-    # conclusion: as expected, the cosine distance is 0 for identical matches. 
-    # Takeaway: when creating a ChromaDB collection, make sure the embedding model's similarity function specified matches the natively-supported
-    # similarity function of the embedding model. Otherwise, results may be inconsistent.
-
 
 def MRE_ip():
     print("\n\nBeginning Minimal Reproducible Example of embedding model with dot product...")
@@ -106,3 +102,7 @@ if __name__ == "__main__":
     MRE_cosine()
 
     MRE_ip()
+
+    # conclusion: as expected, the cosine distance is 0 for identical matches. And very close to 0 for dot product.
+    # Takeaway: when creating a ChromaDB collection, make sure the embedding model's similarity function specified matches the natively-supported
+    # similarity function of the embedding model. Otherwise, results may be inconsistent.
