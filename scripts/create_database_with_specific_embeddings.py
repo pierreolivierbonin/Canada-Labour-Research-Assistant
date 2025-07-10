@@ -2,6 +2,7 @@ import csv
 import os
 
 import chromadb
+from chromadb.config import Settings
 import numpy as np
 import pandas as pd
 from time import time
@@ -22,7 +23,7 @@ def main(collection_name:str,
     
 
     # create client
-    client = chromadb.PersistentClient(path=db_path)
+    client = chromadb.PersistentClient(path=db_path, settings=Settings(anonymized_telemetry=False))
 
     # set a custom max_seq_length
     model.max_seq_length = model.used_seq_length 
