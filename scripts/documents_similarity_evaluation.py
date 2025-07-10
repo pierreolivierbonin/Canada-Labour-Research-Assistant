@@ -3,33 +3,12 @@ This experiment takes into account issues detailed in https://arxiv.org/pdf/2403
 '''
 
 
-import sys
-sys.path.append("./")
-
-from tools import _load_vector_database
-
-
-def fetch_documents_from_database_simplified(database_question, 
-                                  language,
-                                  db_name,
-                                  n_results=5):
-
-    results = _load_vector_database(language, db_name).query(query_texts=database_question,
-                                            n_results=n_results,
-                                            include=["metadatas", "distances", "documents"])
-
-    documents = results["documents"][0]
-    metadata = results["metadatas"][0]
-    ids = [str(i) for i in results["ids"][0]]
-    distances = results["distances"][0]
-
-    return documents, metadata, ids, distances
-
-
 if __name__ == "__main__":
 
     from operator import itemgetter
     import random
+    import sys
+    sys.path.append("./")
 
     import chromadb
     from chromadb.config import Settings
@@ -37,7 +16,6 @@ if __name__ == "__main__":
 
     from config import ChromaDBSettings
     from db_config import EmbeddingModel, ModelsConfig
-    from tools import _load_vector_database
 
     # First run 'create_database_with_specific_embeddings' as a standalone script (i.e. from itself so it can execute the if name block)
     ...
@@ -55,29 +33,32 @@ if __name__ == "__main__":
     all_docs = labour_collection.get()["documents"] # that's 1461 chunks
 
     # Generic clone because 'embeddings' in all-mpnet-base-v2_labour are not a direct representation of 'documents' (see create_database_with_specific_embeddings.py)
-    client = chromadb.PersistentClient(path="ChromaDBSettings.directory_path", settings=Settings(anonymized_telemetry=False))
+    client = chromadb.PersistentClient(path="./chroma_vectorDB_comparison", settings=Settings(anonymized_telemetry=False))
     baseline_labour_collection = client.get_or_create_collection("labour_baseline", 
                                                         embedding_function=selected_model.model_chroma_callable,
                                                         configuration={"hnsw": {"space": "cosine",     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": 1000}})
     
-    embeddings = []
-    ids = []
-    for ix, i in enumerate(all_docs):
-        embeddings.append(selected_model.model_chroma_callable(i))
-        ids.append("id"+str(ix))
-        print(i[:50]+f"... successfully embedded! ({ix}/{len(all_docs)}) ---> {ix/len(all_docs)*100:.2f}% completed.")
-
-    baseline_labour_collection.upsert(embeddings=embeddings,
-                                      documents=all_docs,
-                                      ids=ids)
+    ## uncomment this block when creating the DB for the first time
+    # embeddings = []
+    # ids = []
+    # for ix, i in enumerate(all_docs):
+    #     # embeddings.append(selected_model.model_chroma_callable(i))
+    #     # ids.append("id"+str(ix))
+    #     try:
+    #         baseline_labour_collection.upsert(embeddings=selected_model.model_chroma_callable(i),
+    #                                         documents=i,
+    #                                         ids="id"+str(ix))
+    #         print(i[:50]+f"... successfully embedded! ({ix}/{len(all_docs)}) ---> {ix/len(all_docs)*100:.2f}% completed.")
+    #     except Exception as e:
+    #         print(e)
 
     # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks
     random.seed(1837)
     rand_ix = random.choices(range(collection_chunks_count), k=100)
     rand_sample = itemgetter(*rand_ix)(all_docs)
 
-    # we should expect the cosine distance between a document chunk and itself to be 0.0
+    # we should expect the cosine distance between a document chunk and itself to be 0.0. Results are consistent w/ this expectation.
     non_identical_matches = 0
     ip_distances_with_identical_first_match = []
     dist_description = []
