@@ -53,10 +53,10 @@ if __name__ == "__main__":
     #     except Exception as e:
     #         print(e)
 
-    # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks (skip this when conducting full experiment)
-    random.seed(1837)
-    rand_ix = random.choices(range(collection_chunks_count), k=100)
-    rand_sample = itemgetter(*rand_ix)(all_docs)
+    # # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks (skip this when conducting full experiment)
+    # random.seed(1837)
+    # rand_ix = random.choices(range(collection_chunks_count), k=100)
+    # rand_sample = itemgetter(*rand_ix)(all_docs)
 
     # we should expect the cosine distance between a document chunk and itself to be 0.0. Results are consistent w/ this expectation.
     non_identical_matches = 0
@@ -83,3 +83,5 @@ if __name__ == "__main__":
     with open("./documents_similarity_stats_first_100.csv", "w") as file:
         for d in dist_description:
             file.writelines(str(d)+"\n")
+
+    
