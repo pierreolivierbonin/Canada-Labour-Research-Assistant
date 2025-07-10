@@ -53,7 +53,7 @@ if __name__ == "__main__":
     #     except Exception as e:
     #         print(e)
 
-    # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks
+    # Let's make sure there's enough diversity in this sample: we take a random sample of 100 chunks (skip this when conducting full experiment)
     random.seed(1837)
     rand_ix = random.choices(range(collection_chunks_count), k=100)
     rand_sample = itemgetter(*rand_ix)(all_docs)
@@ -62,9 +62,12 @@ if __name__ == "__main__":
     non_identical_matches = 0
     ip_distances_with_identical_first_match = []
     dist_description = []
-    for i in rand_sample:
+    for i in all_docs: # switch rand_sample to all_docs when runnign full experiment
 
-        results = baseline_labour_collection.query(query_texts=i, n_results=50, include=["documents", "distances"])
+        # search the vectorDB with one of its chunks
+        results = baseline_labour_collection.query(query_texts=i, 
+                                                   n_results=100, 
+                                                   include=["documents", "distances"])
         print(f"\nDocument chunk cosine distances: {[format(d, '.2f') for d in results["distances"][0]]}")
         if i!=results["documents"][0][0]: # that's where we validate that a candidate chunk and the first match are identical
             print(f"\nInconsistent search detected - Document chunk matched with non-identical chunk\nOriginal doc: {i[:100]}\nRetrieved doc: {results["documents"][0][0][:100]}")
@@ -77,6 +80,6 @@ if __name__ == "__main__":
     for d in dist_description:
         print(f"\n{d}")
     
-    with open("./documents_similarity_stats.csv", "w") as file:
+    with open("./documents_similarity_stats_first_100.csv", "w") as file:
         for d in dist_description:
             file.writelines(str(d)+"\n")
