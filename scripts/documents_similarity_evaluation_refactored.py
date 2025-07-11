@@ -15,14 +15,16 @@ from scipy import stats
 
 from db_config import EmbeddingModel, ModelsConfig
 
-class RAGcorpusSelfConsistencyEvaluator:
+class RAGcorporaConsistencyEvaluator:
 
     def __init__(self, 
-                 client_path:str, 
                  embedding_model_fn:callable, 
-                 collection_name:str, 
+                 reference_client_path:str, 
+                 reference_collection_name:str, 
                  similarity_fn_name:str,
                  ef_construction:int,
+                 target_client_path:str=None,
+                 target_collection_name:str=None,
                  top_n:int=50,
                  random_sample=False,
                  random_n=100,
@@ -30,9 +32,11 @@ class RAGcorpusSelfConsistencyEvaluator:
                  verbose=True
                  ):
         
-        self.client_path = client_path
         self.embedding_model_fn = embedding_model_fn
-        self.collection_name = collection_name
+        self.reference_client_path = reference_client_path
+        self.reference_collection_name = reference_collection_name
+        self.target_client_path = target_client_path
+        self.target_collection_name = target_collection_name
         self.similarity_fn_name = similarity_fn_name
         self.ef_construction = ef_construction
         self.top_n = top_n
@@ -40,35 +44,29 @@ class RAGcorpusSelfConsistencyEvaluator:
         self.random_n = random_n
         self.seed = seed
         self.verbose = verbose
-        
-    def _initialize_client(self):
-        try:
-            self.client = chromadb.PersistentClient(path=self.client_path, settings=Settings(anonymized_telemetry=False))
-        except Exception as e:
-            print("Exception found: "+e)
-        
-        # try:
-            # self.client = <insert your preferred vector DB here>
-        # except Exception as e:
-            # print(e)
 
-    def _retrieve_all_docs(self):
-        self._initialize_client()
-        self.all_docs = self.collection.get()["documents"]
+        self.reference_client = chromadb.PersistentClient(path=self.reference_client_path, settings=Settings(anonymized_telemetry=False))
+        if self.target_client_path:
+            self.target_client = chromadb.PersistentClient(path=self.target_client_path, settings=Settings(anonymized_telemetry=False))
+            print("\nListing all collections...\n" + str(self.target_client.list_collections())+"\n")
 
-    def initialize_docs_collection(self):
-        self._initialize_client()
-        self.collection = self.client.get_or_create_collection(self.collection_name, 
+        self.reference_collection = self.reference_client.get_or_create_collection(self.reference_collection_name, 
                                                         embedding_function=self.embedding_model_fn,
                                                         configuration={"hnsw": {"space": self.similarity_fn_name,     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": self.ef_construction}})
+        
+        if self.target_client_path:
+            self.target_collection = self.target_client.get_collection(self.target_collection_name, 
+                                                        embedding_function=self.embedding_model_fn)
+
+    def _retrieve_all_docs(self):
+        self.all_docs = self.reference_collection.get()["documents"]
 
     def find_self_consistency_scores(self, save_to_disk=False):
-
         self._retrieve_all_docs()
         if self.random_sample:
             random.seed(1837)
-            rand_ix = random.choices(range(self.collection.count()), k=self.random_n)
+            rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
             self.rand_sample = itemgetter(*rand_ix)(self.all_docs)
             self.all_docs = self.rand_sample
 
@@ -80,8 +78,8 @@ class RAGcorpusSelfConsistencyEvaluator:
                 self.results_compiled = []
                 for ix, i in enumerate(self.all_docs): # switch rand_sample to all_docs when running full experiment
 
-                    # search the vectorDB with one of its chunks
-                    results = self.collection.query(query_texts=i, 
+                    # search the vectorDB with one of its own chunks
+                    results = self.reference_collection.query(query_texts=i, 
                                                     n_results=self.top_n, 
                                                     include=["documents", "distances"])
                     if self.verbose:
@@ -100,8 +98,8 @@ class RAGcorpusSelfConsistencyEvaluator:
             self.results_compiled = []
             for ix, i in enumerate(self.all_docs): # switch rand_sample to all_docs when runnign full experiment
 
-                # search the vectorDB with one of its chunks
-                results = self.collection.query(query_texts=i, 
+                # search the vectorDB with one of its own chunks
+                results = self.reference_collection.query(query_texts=i, 
                                                 n_results=self.top_n, 
                                                 include=["documents", "distances"])
                 if self.verbose:
@@ -128,6 +126,59 @@ class RAGcorpusSelfConsistencyEvaluator:
             warnings.warn(f"\n\nNon-identical document chunks matched for the random sample of 100 documents in collection: {non_identical_matches}")
 
         return self.results_compiled
+    
+
+    def find_comparative_consistency_scores(self, save_to_disk=False):
+        if not (self.target_client_path and self.target_collection_name):
+            raise AttributeError("Target client and collection must be initialized to conduct comparative analysis.")
+        self._retrieve_all_docs()
+        if self.random_sample:
+            random.seed(1837)
+            rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
+            self.rand_sample = itemgetter(*rand_ix)(self.all_docs)
+            self.all_docs = self.rand_sample
+
+        dist_description = []
+        if save_to_disk:
+            with open(f"./embedding_cosine_distance_distributions_random{self.random_sample}_top{self.top_n}.txt", "w") as f:
+                self.results_compiled = []
+                for ix, i in enumerate(self.all_docs): # switch rand_sample to all_docs when running full experiment
+
+                    # search the vectorDB with one of its own chunks
+                    results = self.target_collection.query(query_texts=i, 
+                                                    n_results=self.top_n, 
+                                                    include=["documents", "distances"])
+                    if self.verbose:
+                        print(f"\nDocument chunk cosine distances for top-{self.top_n} matches: {[format(d, '.2f') for d in results["distances"][0]]}")
+                    f.writelines(str([format(d, '.2f') for d in results["distances"][0]])+"\n")
+
+                    dist_description.append(stats.describe(results["distances"][0]))
+                    self.results_compiled.append((i, results))
+            
+        else:
+            self.results_compiled = []
+            for ix, i in enumerate(self.all_docs): # switch rand_sample to all_docs when runnign full experiment
+
+                # search the vectorDB with one of its own chunks
+                results = self.reference_collection.query(query_texts=i, 
+                                                n_results=self.top_n, 
+                                                include=["documents", "distances"])
+                if self.verbose:
+                    print(f"\nDocument chunk cosine distances: {[format(d, '.2f') for d in results["distances"][0]]}")
+                f.writelines(str([format(d, '.2f') for d in results["distances"][0]])+"\n")
+
+                dist_description.append(stats.describe(results["distances"][0]))
+                self.results_compiled.append((i, results))
+
+        if self.verbose:
+            for d in dist_description:
+                print(f"\n{d}")
+                    
+            with open(f"./documents_similarity_stats_top{self.top_n}.csv", "w") as file:
+                for d in dist_description:
+                    file.writelines(str(d)+"\n")
+
+        return self.results_compiled
 
 
 if __name__ == "__main__":
@@ -135,9 +186,11 @@ if __name__ == "__main__":
     from db_config import EmbeddingModel, ModelsConfig
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
-    evaluator = RAGcorpusSelfConsistencyEvaluator(client_path="./chroma_vectorDB_comparison",
-                                             embedding_model_fn=selected_model.model_chroma_callable,
-                                             collection_name="labour_baseline",
+    evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
+                                             reference_client_path="./chroma_vectorDB_comparison",
+                                             reference_collection_name="labour_baseline",
+                                             target_client_path="./chroma_vectorDB",
+                                             target_collection_name="all-mpnet-base-v2_labour",
                                              similarity_fn_name="cosine",
                                              ef_construction=1000,
                                              top_n=10,
@@ -145,12 +198,24 @@ if __name__ == "__main__":
                                              random_n=25,
                                              seed=1837
                                              )
-    evaluator.initialize_docs_collection()
-    results = evaluator.find_self_consistency_scores(save_to_disk=True)
-    print(len(results))
+    
+    results_self_consistency = evaluator.find_self_consistency_scores(save_to_disk=True)
 
-    # manual validation that the queried documents resemble the retrieved documents
-    for ix, result in enumerate(results):
+    # manual validation for self-consistency: 
+    # How distant are the queried document chunks from the retrieved documents chunks in the same collection?
+    for ix, result in enumerate(results_self_consistency):
+        print(f"\nDocument queried... \n\n{result[0]}")
+        print(f"\nPreviewing top-{evaluator.top_n} matches...")
+        
+        for jx, j in enumerate(range(len(result[1]["documents"][0]))):
+            print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
+            print(f"\n{result[1]["documents"][0][j]}")
+
+    # manual validation for comparative consistency: 
+    # How distant are the queried chunks of the reference collection from the retrieved chunks in a different collection?
+    results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
+
+    for ix, result in enumerate(results_comparative_consistency):
         print(f"\nDocument queried... \n\n{result[0]}")
         print(f"\nPreviewing top-{evaluator.top_n} matches...")
         
