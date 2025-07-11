@@ -52,6 +52,7 @@ class VectorDBDataFiles:
                 "en": [
                     ("clc", "https://laws-lois.justice.gc.ca/eng/acts/l-2/"),
                     ("clsr", "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._986/")
+
                 ],
                 "fr": [
                     ("clc", "https://laws-lois.justice.gc.ca/fra/lois/l-2/"),
@@ -60,20 +61,20 @@ class VectorDBDataFiles:
             },
             "page": {
                 "en": [
-                    ("LABOUR", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour.html"),
-                    ("WORKPLACE", "https://www.canada.ca/en/services/jobs/workplace.html"),
-                    ("LABOUR-REPORTS", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour/programs/labour-standards/reports.html"),
-                    ("LABOUR-STANDARDS", "https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html"),
-                    ("COMPENSATION", "https://www.canada.ca/en/services/jobs/workplace/health-safety/compensation.html"),
-                    ("HEALTH-SAFETY", "https://www.canada.ca/en/services/jobs/workplace/health-safety.html")
+                    ("LABOUR", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour.html", 1),
+                    ("WORKPLACE", "https://www.canada.ca/en/services/jobs/workplace.html", 1),
+                    ("LABOUR-REPORTS", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour/programs/labour-standards/reports.html", 1),
+                    ("LABOUR-STANDARDS", "https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html", 1),
+                    ("COMPENSATION", "https://www.canada.ca/en/services/jobs/workplace/health-safety/compensation.html", 1),
+                    ("HEALTH-SAFETY", "https://www.canada.ca/en/services/jobs/workplace/health-safety.html", 1)
                 ],
                 "fr": [
-                    ("LABOUR", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail.html"),
-                    ("WORKPLACE", "https://www.canada.ca/fr/services/emplois/milieu-travail.html"),
-                    ("LABOUR-REPORTS", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail/programmes/normes-travail/rapports.html"),
-                    ("LABOUR-STANDARDS", "https://www.canada.ca/fr/services/emplois/milieu-travail/normes-travail-federales.html"),
-                    ("COMPENSATION", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite/indemnisation.html"),
-                    ("HEALTH-SAFETY", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite.html")
+                    ("LABOUR", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail.html", 1),
+                    ("WORKPLACE", "https://www.canada.ca/fr/services/emplois/milieu-travail.html", 1),
+                    ("LABOUR-REPORTS", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail/programmes/normes-travail/rapports.html", 1),
+                    ("LABOUR-STANDARDS", "https://www.canada.ca/fr/services/emplois/milieu-travail/normes-travail-federales.html", 1),
+                    ("COMPENSATION", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite/indemnisation.html", 1),
+                    ("HEALTH-SAFETY", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite.html", 1)
                 ]
             },
             "page_blacklist": {
