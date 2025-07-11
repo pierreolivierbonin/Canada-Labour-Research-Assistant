@@ -185,7 +185,11 @@ The application can be customized for your own use case by creating new database
    - **`languages`**: List of language codes (e.g., `["en", "fr"]`) that your database supports.
    - **`ressource_name`**: Dictionary mapping language codes to display names for the UI (e.g., `{"en": "Labour", "fr": "Travail"}`).
 3. **Add your data sources** using these supported formats.
-   - **Web pages**: Add URLs under the `"page"` key, organized by language
+   - **Web pages**: Add URLs under the `"page"` key, organized by language. Each web page entry is a tuple with format `("NAME", "URL", depth)` where:
+     - `depth = 0`: Extract only the page itself
+     - `depth = 1`: Extract the page and all links within it
+     - `depth = 2`: Extract the page, all links within it, and links within those links (2 levels deep)
+     - Maximum depth limit is 2
    - **Legal pages**: Add law URLs under the `"law"` key, organized by language
    - **IPG pages**: Add IPG URLs under the `"ipg"` key, organized by language
    - **PDF files**: Add URLs or local file paths under the `"pdf"` key, organized by language
