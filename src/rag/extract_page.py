@@ -167,6 +167,10 @@ def extract_pages_main(pages_dict:dict, database_name:str, selected_tokenizer, s
 
         #pages_to_process = WebCrawlConfig.canada_pages_ids_and_urls if language == "en" else WebCrawlConfig.canada_pages_ids_and_urls_fr
         pages_to_process = pages_dict[language]
+
+        # If pages_to_process is a list of list, convert to a list of tuples
+        if isinstance(pages_to_process, list) and all(isinstance(item, list) for item in pages_to_process):
+            pages_to_process = [tuple(item) for item in pages_to_process]
         
         # Initialize PROCESSED_LINKS with starting pages
         PROCESSED_LINKS = set(pages_to_process)
