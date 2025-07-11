@@ -69,8 +69,8 @@ def main(collection_name:str,
                 "id": df.id.values,
                 "title": df.title.values,
                 "hierarchy": df.hierarchy.values,
-                "section_number": df.section_number.values.tolist(), #convert to list to avoid type errors (int64)
-                "main_section_number": df.section_number.apply(lambda x: x.split('.')[0] if isinstance(x, str) and '.' in x else x).values.tolist(), #convert to list to avoid type errors (int64)
+                "section_number": df.section_number.apply(lambda x: str(x)).values.tolist(), #convert to list to avoid type errors (int64)
+                "main_section_number": df.section_number.apply(lambda x: x.split('.')[0] if isinstance(x, str) and '.' in x else str(x)).values.tolist(), #convert to list to avoid type errors (int64)
                 "hyperlink": df.hyperlink.values
             }
             
