@@ -32,6 +32,20 @@ class RAGcorporaConsistencyEvaluator:
                  verbose=True
                  ):
         
+        '''
+        This class evaluates the consistency of a corpus either 1) with itself, or 2) with a different corpus.
+        Useful for applications leveraging Retrieval-Augmented Generation.
+
+        To evaluate self-consistency, initialize with the default target_* parameters. This will take a document chunk 
+        from the `reference_collection` and use it as a query with respect to its own corpus.
+
+        To evaluate comparative consistency, initialize with the required arguments alongside target_* arguments. This will take a document chunk
+        from the `reference_collection` and use it as a query with respect to the `target_collection`.
+
+        @top_n: determines the number of matches retrieved, in order from most to least to most distant (or least to most similar).
+        @random_sample: de
+        '''
+        
         self.embedding_model_fn = embedding_model_fn
         self.reference_client_path = reference_client_path
         self.reference_collection_name = reference_collection_name
@@ -46,15 +60,15 @@ class RAGcorporaConsistencyEvaluator:
         self.verbose = verbose
 
         self.reference_client = chromadb.PersistentClient(path=self.reference_client_path, settings=Settings(anonymized_telemetry=False))
-        if self.target_client_path:
-            self.target_client = chromadb.PersistentClient(path=self.target_client_path, settings=Settings(anonymized_telemetry=False))
-            print("\nListing all collections...\n" + str(self.target_client.list_collections())+"\n")
-
         self.reference_collection = self.reference_client.get_or_create_collection(self.reference_collection_name, 
                                                         embedding_function=self.embedding_model_fn,
                                                         configuration={"hnsw": {"space": self.similarity_fn_name,     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": self.ef_construction}})
         
+        if self.target_client_path:
+            self.target_client = chromadb.PersistentClient(path=self.target_client_path, settings=Settings(anonymized_telemetry=False))
+            print("\nListing all collections...\n" + str(self.target_client.list_collections())+"\n")
+
         if self.target_client_path:
             self.target_collection = self.target_client.get_collection(self.target_collection_name, 
                                                         embedding_function=self.embedding_model_fn)
