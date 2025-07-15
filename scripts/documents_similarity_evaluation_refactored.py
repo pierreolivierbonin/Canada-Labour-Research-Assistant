@@ -77,7 +77,7 @@ class RAGcorporaConsistencyEvaluator:
 
 
     def find_self_consistency_scores(self, save_to_disk=False):
-        self._retrieve_all_docs()
+
         if self.random_sample:
             random.seed(1837)
             rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
@@ -145,7 +145,7 @@ class RAGcorporaConsistencyEvaluator:
     def find_comparative_consistency_scores(self, save_to_disk=False):
         if not (self.target_client_path and self.target_collection_name):
             raise AttributeError("Target client and collection must be initialized to conduct comparative analysis.")
-        self._retrieve_all_docs()
+
         if self.random_sample:
             random.seed(1837)
             rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
@@ -161,7 +161,7 @@ class RAGcorporaConsistencyEvaluator:
                     # search the vectorDB with one of its own chunks
                     results = self.target_collection.query(query_texts=i, 
                                                     n_results=self.top_n, 
-                                                    include=["documents", "distances"])
+                                                    include=["documents", "distances"]) # WIP
                     if self.verbose:
                         print(f"\nDocument chunk cosine distances for top-{self.top_n} matches: {[format(d, '.2f') for d in results["distances"][0]]}")
                     f.writelines(str([format(d, '.2f') for d in results["distances"][0]])+"\n")
