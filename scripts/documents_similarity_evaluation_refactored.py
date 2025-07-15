@@ -216,7 +216,7 @@ if __name__ == "__main__":
     results_self_consistency = evaluator.find_self_consistency_scores(save_to_disk=True)
 
     # manual validation for self-consistency: 
-    # How distant are the queried document chunks from the retrieved documents chunks in the same collection?
+    # How distant are the queried document chunks from the retrieved documents chunks of the same collection?
     for ix, result in enumerate(results_self_consistency):
         print(f"\nDocument queried... \n\n{result[0]}")
         print(f"\nPreviewing top-{evaluator.top_n} matches...")
@@ -226,7 +226,7 @@ if __name__ == "__main__":
             print(f"\n{result[1]["documents"][0][j]}")
 
     # manual validation for comparative consistency: 
-    # How distant are the queried chunks of the reference collection from the retrieved chunks in a different collection?
+    # How distant are the queried chunks of the reference collection from the retrieved chunks of the target collection?
     results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
 
     for ix, result in enumerate(results_comparative_consistency):
