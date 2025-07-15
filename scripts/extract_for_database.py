@@ -15,7 +15,7 @@ from db_config import VectorDBDataFiles
 from rag.rag_extractor import RagExtractor
 
 if __name__ == "__main__":
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
     extractor = RagExtractor()
 
     for db in databases:

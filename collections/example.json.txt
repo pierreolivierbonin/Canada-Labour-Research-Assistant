@@ -1,0 +1,48 @@
+{
+    "name": "another_use_case",
+    "is_default": true,           #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
+    "save_html": true,            #<----- If True, the html files of all web pages will be saved in the "outputs" folder
+    "languages": ["en", "fr"],    #<----- List of language codes that your database supports
+    "ressource_name": {           #<----- Dictionary mapping language codes to display names for the UI
+        "en": "Another use case"
+    },
+
+    # PDF files: Add URLs or local file paths organized by language
+    "pdf": {                      
+        "en": [
+            "https://www.example.com/pdf/example.pdf",      #<----- Remote PDF URL
+            "C:/local/documents/example.pdf",               #<----- Local PDF file path
+            "../documents/pdf_folder/"                      #<----- Local folder containing PDFs
+        ]
+    },
+
+    # IPG pages: Add IPG URLs organized by language
+    "ipg": {                      
+        "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html"
+    },
+
+    # Legal pages: Add law URLs organized by language. Format: ["name", "url"]
+    "law": {
+        "en": [
+            ["example_act", "https://laws-lois.justice.gc.ca/eng/acts/e-1/"],
+            ["example_regulations", "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._123/"]
+        ]
+    },
+
+    # Web pages: Add URLs organized by language. Format: ["NAME", "URL", depth]
+    "page": {                     
+        "en": [                   
+            ["MAIN_PAGE", "https://www.example.com/en/main.html", 0],        #<----- depth = 0: Extract only the page itself
+            ["SERVICES", "https://www.example.com/en/services.html", 1],     #<----- depth = 1: Extract the page and all links within it
+            ["RESOURCES", "https://www.example.com/en/resources.html", 2]    #<----- depth = 2 (Max depth): Extract the page, all links within it, and links within those links
+        ]
+    },
+    
+    # Optional: URLs to exclude from extraction during web crawling
+    "page_blacklist": {           
+        "en": [
+            "/en/news/",                                    #<----- Exclude news pages
+            "/en/contact.html"                              #<----- Exclude contact pages
+        ]
+    }
+}

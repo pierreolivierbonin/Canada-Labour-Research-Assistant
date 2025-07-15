@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 from chromadb import EmbeddingFunction
 from sentence_transformers import SentenceTransformer
@@ -34,105 +36,29 @@ class ModelsConfig:
 
 @dataclass
 class VectorDBDataFiles:
-    databases = [
-        {
-            "name": "labour",
-            "is_default": True,
-            "save_html": True,
-            "languages": ["en", "fr"],
-            "ressource_name": {
-                "en": "Labour",
-                "fr": "Travail"
-            },
-            "ipg": {
-                "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html",
-                "fr": "https://www.canada.ca/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
-            },
-            "law": {
-                "en": [
-                    ("clc", "https://laws-lois.justice.gc.ca/eng/acts/l-2/"),
-                    ("clsr", "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._986/")
-
-                ],
-                "fr": [
-                    ("clc", "https://laws-lois.justice.gc.ca/fra/lois/l-2/"),
-                    ("clsr", "https://laws-lois.justice.gc.ca/fra/reglements/C.R.C.%2C_ch._986/")
-                ]
-            },
-            "page": {
-                "en": [
-                    ("LABOUR", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour.html", 1),
-                    ("WORKPLACE", "https://www.canada.ca/en/services/jobs/workplace.html", 1),
-                    ("LABOUR-REPORTS", "https://www.canada.ca/en/employment-social-development/corporate/portfolio/labour/programs/labour-standards/reports.html", 1),
-                    ("LABOUR-STANDARDS", "https://www.canada.ca/en/services/jobs/workplace/federal-labour-standards.html", 1),
-                    ("COMPENSATION", "https://www.canada.ca/en/services/jobs/workplace/health-safety/compensation.html", 1),
-                    ("HEALTH-SAFETY", "https://www.canada.ca/en/services/jobs/workplace/health-safety.html", 1)
-                ],
-                "fr": [
-                    ("LABOUR", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail.html", 1),
-                    ("WORKPLACE", "https://www.canada.ca/fr/services/emplois/milieu-travail.html", 1),
-                    ("LABOUR-REPORTS", "https://www.canada.ca/fr/emploi-developpement-social/ministere/portefeuille/travail/programmes/normes-travail/rapports.html", 1),
-                    ("LABOUR-STANDARDS", "https://www.canada.ca/fr/services/emplois/milieu-travail/normes-travail-federales.html", 1),
-                    ("COMPENSATION", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite/indemnisation.html", 1),
-                    ("HEALTH-SAFETY", "https://www.canada.ca/fr/services/emplois/milieu-travail/sante-securite.html", 1)
-                ]
-            },
-            "page_blacklist": {
-                "en": [
-                    "/en/news/",
-                    "/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html"
-                ],
-                "fr": [
-                    "/fr/nouvelles.html",
-                    "/fr/emploi-developpement-social/programmes/lois-reglements/travail/interpretations-politiques.html"
-                ]
-            }
-        },
-        {
-            "name": "equity",
-            "languages": ["en", "fr"],
-            "ressource_name": {
-                "en": "Equity",
-                "fr": "Équité"
-            },
-            "pdf": {
-                "en": [
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuide-20220224-PDF%20(1).pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/EmployerOnboardingGuide-LEEP-2024.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/Taking%20action%20on%20your%20employment%20equity%20data.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWorkshopHowToInterpretForm2,%20parts%20D-G-20220427.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDStep-by-step%20guide%20for%20annual%20Legislated%20Employment%20Equity%20Program%20(LEEP)%20reporting.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/EmployerOnboardingGuide-FCP-2024.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDHowToImproveWorkplaceEquity-20230308-PDF.pdf"
-                ],
-                "fr": [
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDWEIMSUserGuideFR-20220224-PDF%20(1).pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/GuideDIntegrationPourLesEmployeurs-PLEME-2024.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/Agir%20a%20partir%20de%20vos%20donnees%20sur%20l%20equite%20en%20emploi.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDAtelierCommentInterpreterVotreFormulaire%202,%20parties%20D-G-20220428.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-Guide%20de%20preparation%20etape%20par%20etape%20du%20rapport%20annuel%20du%20Programme%20legifere%20dequite%20en%20matiere%20demploi%20(PLEME).pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/GuideDIntegrationPourLesEmployeurs-PCF-2024.pdf",
-                    "https://equity.esdc.gc.ca/sgiemt-weims/maint/file/download/FP-GC-WEDCommentAmeliorerLequiteSurLeLieuDuTravailFR-20230308-PDF.pdf"
-                ]
-            }
-        }
-        # ,{
-        #     "name": "another_use_case",
-        #     "is_default": True,           #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
-        #     "save_html": True,            #<----- If True, the html files of all web pages will be saved in the "outputs" folder
-        #     "languages": ["en"],
-        #     "ressource_name": {
-        #         "en": "Another use case"
-        #     },
-        #     "pdf": {
-        #         "en": [
-        #             "https://www.example.com/pdf/example.pdf",  #<----- Remote pdf
-        #             "C:/test.pdf"                               #<----- Local pdf file
-        #             "../use_case_x/"                            #<----- Local folder with pdfs
-        #         ] 
-        #     }
-        # }
-    ]
+    _databases = None
+    
+    # Lazily load databases from JSON files in collections folder
+    @classmethod
+    def databases(cls):
+        if cls._databases is None:
+            cls._databases = []
+            collections_dir = Path("collections")
+            
+            if collections_dir.exists():
+                # Get all .json files in collections directory
+                json_files = list(collections_dir.glob("*.json"))
+                
+                for json_file in json_files:
+                    try:
+                        with open(json_file, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            cls._databases.append(data)
+                    except (json.JSONDecodeError, FileNotFoundError, UnicodeDecodeError) as e:
+                        print(f"Warning: Could not load {json_file}: {e}")
+                        continue
+        
+        return cls._databases
 
 @dataclass
 class FilteredMTEB:

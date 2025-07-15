@@ -1,3 +1,25 @@
+"""
+Extract Transport Canada Acts and Regulations Links
+
+This script scrapes Transport Canada's website to collect links to all transport acts and regulations,
+then generates a database collection configuration file for the Canada Labour Research Assistant.
+
+What it does:
+1. Scrapes https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations
+2. Scrapes https://tc.canada.ca/en/corporate-services/acts-regulations/list-acts  
+3. Filters and processes the links to only include valid law pages
+4. Creates collections/transport_act_reg.json with the structured data
+
+Usage:
+1. Uncomment the line that calls this script in setup/create_or_update_database.sh
+2. Run the database creation script:
+   ./setup/create_or_update_database.sh
+
+Alternatively, run manually:
+  python scripts/extract_links_transport_acts_and_reg.py
+  ./setup/create_or_update_database.sh
+"""
+
 import requests
 import os
 import json
@@ -128,7 +150,7 @@ for link in all_links:
         not_included_pages.append(link)
 
 # Save the transport_act_reg object as JSON
-with open('scripts/outputs/transport_act_reg.json', 'w', encoding='utf-8') as f:
+with open('collections/transport_act_reg.json', 'w', encoding='utf-8') as f:
     json.dump(transport_act_reg, f, indent=2, ensure_ascii=False)
 
 if len(not_included_pages) > 0:
