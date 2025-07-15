@@ -221,7 +221,7 @@ if __name__ == "__main__":
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
     selected_model.assign_model_and_attributes()
 
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]

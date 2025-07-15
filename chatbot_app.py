@@ -28,7 +28,7 @@ class App:
         self.model = self.config.default_model_local if not self.is_remote else self.config.default_model_remote
         self.nb_previous_questions = self.config.nb_previous_questions
 
-        databases = VectorDBDataFiles.databases
+        databases = VectorDBDataFiles.databases()
 
         # The first db where is_default is True (first one otherwise)
         self.db_name = next((db for db in databases if db.get("is_default", False)), databases[0] if len(databases) > 0 else None)
@@ -90,7 +90,7 @@ class App:
                                 options=model_shortlist, 
                                 index=model_shortlist.index(default_model))
             
-            databases = VectorDBDataFiles.databases
+            databases = VectorDBDataFiles.databases()
 
             def translate_db_name(db):
                 # Try to get the current language, if not available, get the first available language
@@ -107,7 +107,7 @@ class App:
                                 options=list(translated_db_list), 
                                 index=translated_db_list.index(translated_db_name))
             
-            orig_db_list = list([db["name"] for db in VectorDBDataFiles.databases])
+            orig_db_list = list([db["name"] for db in VectorDBDataFiles.databases()])
             self.db_name = orig_db_list[translated_db_list.index(selected_db_name)]
             
             sources_number = st.number_input(self.translator.get('sidebar.sources_prompt'), 

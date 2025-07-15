@@ -164,7 +164,7 @@ if __name__ == "__main__":
     from rag.page_utils import get_tokenizer_and_limit
 
     selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]

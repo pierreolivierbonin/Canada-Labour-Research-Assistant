@@ -334,7 +334,7 @@ if __name__ == "__main__":
     from rag.page_utils import get_tokenizer_and_limit
     from rag.extract_law import extract_law_main
 
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
     selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
 
     for db in databases:

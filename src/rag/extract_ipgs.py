@@ -165,7 +165,7 @@ if __name__ == "__main__":
     from rag.extract_ipgs import extract_ipgs_main
 
     selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]
