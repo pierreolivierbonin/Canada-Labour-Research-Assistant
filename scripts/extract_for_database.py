@@ -23,7 +23,7 @@ if __name__ == "__main__":
         save_html = db.get("save_html", False)
         print(f"Processing {db_name}...")
 
-        os.makedirs(f"outputs/{db_name}", exist_ok=True)
+        os.makedirs(f"extracted_data/{db_name}", exist_ok=True)
 
         db_ipg = db.get("ipg")
         if db_ipg:

@@ -304,7 +304,7 @@ def process_toc_page(toc_url, database_name, file_name, tokenizer, token_limit, 
         print(f"WARNING: No sections found for {full_page_url}")
 
     # Open the CSV file for writing
-    with open(f"outputs/{database_name}/{file_name}{language_suffix}.csv", "w", newline="", encoding="utf-8") as csvfile:
+    with open(f"extracted_data/{database_name}/{file_name}{language_suffix}.csv", "w", newline="", encoding="utf-8") as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(["id", "title", "section_number", "hierarchy", "hyperlink", "text"])
 
@@ -318,8 +318,8 @@ def extract_law_main(law_dict:dict, database_name:str, selected_tokenizer, selec
         #documents = WebCrawlConfig.toc_filenames_and_urls if language == "en" else WebCrawlConfig.toc_filenames_and_urls_fr
         documents = law_dict[language]
 
-        # Create outputs directory if it doesn't exist
-        os.makedirs(f"outputs/{database_name}", exist_ok=True)
+        # Create extracted_data directory if it doesn't exist
+        os.makedirs(f"extracted_data/{database_name}", exist_ok=True)
 
         for file_name, toc_url in documents:
             

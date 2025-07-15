@@ -228,7 +228,7 @@ if __name__ == "__main__":
         languages = db.get("languages", ["en", "fr"])  # Default to both languages if not specified
         model_name = selected_model.model_name + "_" + db_name.lower()
 
-        root_path = f"outputs/{db_name}/"
+        root_path = f"extracted_data/{db_name}/"
         data_files_tuples = []
         
         # Create data files tuples for each type of data file
