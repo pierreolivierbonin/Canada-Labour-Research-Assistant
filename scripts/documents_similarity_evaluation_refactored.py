@@ -243,7 +243,7 @@ if __name__ == "__main__":
     #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
     #         print(f"\n{result[1]["documents"][0][j]}")
 
-    # run on the entire collection
+    # run on the entire collection of 1461 document chunks
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
                                              reference_client_path="./chroma_vectorDB_comparison",
                                              reference_collection_name="labour_baseline",
