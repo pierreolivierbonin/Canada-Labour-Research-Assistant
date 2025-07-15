@@ -243,12 +243,12 @@ if __name__ == "__main__":
     #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
     #         print(f"\n{result[1]["documents"][0][j]}")
 
-    # run on the entire collection of 1461 document chunks
+    # run on the entire collection of 1461 document chunks with target collection
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
                                              reference_client_path="./chroma_vectorDB_comparison",
                                              reference_collection_name="labour_baseline",
                                              target_client_path="./chroma_vectorDB",
-                                             target_collection_name="all-mpnet-base-v2_labour",
+                                             target_collection_name="multi-qa-mpnet-base-dot-v1_transport_act_reg",
                                              similarity_fn_name="cosine",
                                              ef_construction=1000,
                                              top_n=73,                        # total chunks = 1461, so 1461*0.05==73 for top 5% matches
@@ -256,4 +256,5 @@ if __name__ == "__main__":
                                              seed=1837
                                              )
     
-    evaluator.find_self_consistency_scores(save_to_disk=True)
+    # evaluator.find_self_consistency_scores(save_to_disk=True)
+    evaluator.find_comparative_consistency_scores(save_to_disk=True)
