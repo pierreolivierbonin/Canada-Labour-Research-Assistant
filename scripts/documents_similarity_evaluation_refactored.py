@@ -60,7 +60,10 @@ class RAGcorporaConsistencyEvaluator:
                                                         embedding_function=self.embedding_model_fn,
                                                         configuration={"hnsw": {"space": self.similarity_fn_name,     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": self.ef_construction}})
-        
+        self.all_docs = self.reference_collection.get()["documents"] # that's 1461 chunks
+        self.all_embeddings = self.reference_collection.get()["embeddings"]
+        self.ids = self.reference_collection.get()["ids"]
+
         if self.target_client_path:
             self.target_client = chromadb.PersistentClient(path=self.target_client_path, settings=Settings(anonymized_telemetry=False))
             print("\nListing all collections...\n" + str(self.target_client.list_collections())+"\n")
@@ -68,12 +71,10 @@ class RAGcorporaConsistencyEvaluator:
         if self.target_client_path:
             self.target_collection = self.target_client.get_collection(self.target_collection_name, 
                                                         embedding_function=self.embedding_model_fn)
+            self.all_docs = self.target_collection.get()["documents"] # that's 1461 chunks
+            self.all_embeddings = self.target_collection.get()["embeddings"]
+            self.ids = self.target_collection.get()["ids"]
 
-    def _retrieve_all_docs(self):
-        self.all_docs = self.reference_collection.get()["documents"] # that's 1461 chunks
-
-    def _retrieve_all_embeddings(self):
-        self.all_embeddings = self.reference_collection.get()["embeddings"]
 
     def find_self_consistency_scores(self, save_to_disk=False):
         self._retrieve_all_docs()
@@ -254,12 +255,11 @@ if __name__ == "__main__":
                                              reference_client_path="./chroma_vectorDB_comparison",
                                              reference_collection_name="labour_baseline",
                                              target_client_path="./chroma_vectorDB",
-                                             target_collection_name="multi-qa-mpnet-base-dot-v1_transport_act_reg",
+                                             target_collection_name="all-mpnet-base-v2_transport_act_reg",
                                              similarity_fn_name="cosine",
                                              ef_construction=1000,
                                              top_n=73,                        # total chunks = 1461, so 1461*0.05==73 for top 5% matches
-                                             random_sample=True,
-                                             random_n=10,
+                                             random_sample=False,
                                              seed=1837
                                              )
     
@@ -286,7 +286,6 @@ if __name__ == "__main__":
         print(f"\nDocument queried... \n\n{result[0]}")
         print(f"\nPreviewing top-{evaluator.top_n} matches...")
         
-        time.sleep(2)
         for jx, j in enumerate(range(len(result[1]["documents"][0]))):
             print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
             print(f"\n{result[1]["documents"][0][j]}")
