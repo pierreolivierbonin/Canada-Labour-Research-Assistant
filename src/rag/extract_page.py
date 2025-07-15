@@ -53,10 +53,10 @@ def extract_toc_links(soup, base_url) -> List[str]:
             links.append(f"{base_url}{href}")
     return links
 
-# Save HTML content to a file in the outputs/canada_html directory using the page title
+# Save HTML content to a file in the extracted_data/pages_html directory using the page title
 def save_html_content(content: str, title: str, current_language: str, database_name: str):
     language_suffix = "_fr" if current_language != "en" else ""
-    output_dir = os.path.join("outputs", database_name, "pages_html" + language_suffix)
+    output_dir = os.path.join("extracted_data", database_name, "pages_html" + language_suffix)
     os.makedirs(output_dir, exist_ok=True)
     
     # Clean the title for use as filename
