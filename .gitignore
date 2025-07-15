@@ -22,3 +22,4 @@ Llama-3.2*
 vllm/
 static/
 src/CLaRA*
+*.code-workspace
