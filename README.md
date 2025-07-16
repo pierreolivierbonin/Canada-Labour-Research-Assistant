@@ -173,9 +173,11 @@ Once this setup completed, you will be able to switch to **remote mode** via the
 </details>
 
 <!-- CREATE DATABASE -->
-## Database Creation
+## Database Creation Explained & How to Create Your Own Knowledge Base
 
-The application can be customized for your own use case by creating new databases. Here's how to set up your own knowledge base:
+The application can be customized for your own use case by creating new databases. See below for detailed instructions.
+
+> Refer to [collections/example.json.txt](./collections/example.json.txt) for a template config file.
 
 ### Configuration
 
