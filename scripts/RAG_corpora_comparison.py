@@ -200,6 +200,10 @@ if __name__ == "__main__":
     '''
     Related paper: https://arxiv.org/pdf/2403.05440v1. 
     The output produced  notably confirms the cosine distance is equal to zero (0) when the chunk is matched with itself (first distance returned). 
+    
+    Step 1: make sure the document chunks are embedded using 'all-mpnet-base-v2' (a.k.a. 'mpnet' in db_config). Use the script
+            create_database_with_specific_embeddings.py to do so.
+    Step 2: 
     '''
 
     import time
