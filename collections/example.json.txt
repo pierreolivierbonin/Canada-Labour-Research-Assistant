@@ -10,9 +10,9 @@
     # PDF files: Add URLs or local file paths organized by language
     "pdf": {                      
         "en": [
-            "https://www.example.com/pdf/example.pdf",      #<----- Remote PDF URL
-            "C:/local/documents/example.pdf",               #<----- Local PDF file path
-            "../documents/pdf_folder/"                      #<----- Local folder containing PDFs
+            "https://www.example.com/pdf/example.pdf",      #<----- Remote server PDF URL
+            "C:/Users/<username>/<data_dir>/example.pdf",   #<----- Local PDF file path
+            "../<data_dir>/pdf_folder/"                     #<----- Local folder containing PDFs
         ]
     },
 
