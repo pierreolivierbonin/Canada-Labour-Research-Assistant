@@ -34,7 +34,7 @@ def process_ipg_page(ipg: IPG, database_name, save_html, tokenizer, token_limit,
         language_suffix = "_fr" if current_language != "en" else ""
 
         if save_html:
-            output_dir = f"outputs/{database_name}/ipgs_html{language_suffix}"
+            output_dir = f"extracted_data/{database_name}/ipgs_html{language_suffix}"
             os.makedirs(output_dir, exist_ok=True)
             filename = f"{output_dir}/{ipg.id}{language_suffix}.html"
             
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     from rag.extract_ipgs import extract_ipgs_main
 
     selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]

@@ -5,6 +5,7 @@ import time
 
 import chromadb
 from chromadb.config import Settings
+from chromadb.errors import NotFoundError
 import streamlit as st
 import torch
 
@@ -32,8 +33,12 @@ def _load_vector_database(language,
 
     collection_name_in_language = collection_name + "_" + db_name.lower() + ("_" + language if language != "en" else "")
 
-    collection = client.get_collection(collection_name_in_language, 
-                                       embedding_function=sentence_transformer_ef)
+    try:
+        collection = client.get_collection(collection_name_in_language, 
+                                           embedding_function=sentence_transformer_ef)
+    except NotFoundError:
+        error_message = f"Collection '{db_name}' is missing. Please run './setup/create_or_update_database.sh' to create it."
+        raise NotFoundError(error_message)
     
     return collection
 

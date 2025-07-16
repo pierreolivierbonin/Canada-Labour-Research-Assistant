@@ -173,23 +173,32 @@ Once this setup completed, you will be able to switch to **remote mode** via the
 </details>
 
 <!-- CREATE DATABASE -->
-## Database Creation
+## Database Creation Explained & How to Create Your Own Knowledge Base
 
-The application can be customized for your own use case by creating new databases. Here's how to set up your own knowledge base:
+The application can be customized for your own use case by creating new databases. See below for detailed instructions.
+
+> Refer to [collections/example.json.txt](./collections/example.json.txt) for a template config file.
 
 ### Configuration
 
-1. **Edit the database configuration** in [`db_config.py`](./db_config.py), inside the 'VectorDBDataFiles' dataclass.
-2. **Configure database metadata**:
-   - **`is_default`**: Set to `True` to make this database the default selection in the UI.
-   - **`languages`**: List of language codes (e.g., `["en", "fr"]`) that your database supports.
-   - **`ressource_name`**: Dictionary mapping language codes to display names for the UI (e.g., `{"en": "Labour", "fr": "Travail"}`).
-3. **Add your data sources** using these supported formats.
-   - **Web pages**: Add URLs under the `"page"` key, organized by language
-   - **Legal pages**: Add law URLs under the `"law"` key, organized by language
+1. **Create or edit database configuration files** in the [`collections/`](./collections/) folder. Each database is defined by a JSON file in this directory.
+2. **Configure database metadata** in your JSON file:
+   - **`name`**: The database identifier
+   - **`is_default`**: Set to `true` to make this database the default selection in the UI
+   - **`save_html`**: Set to `true` to save HTML content locally
+   - **`languages`**: List of language codes (e.g., `["en", "fr"]`) that your database supports
+   - **`ressource_name`**: Dictionary mapping language codes to display names for the UI (e.g., `{"en": "Labour", "fr": "Travail"}`)
+3. **Add your data sources** using these supported formats, organized by language:
+   - **Web pages**: Add URLs under the `"page"` key. Each web page entry is an array with format `["NAME", "URL", depth]` where:
+     - `depth = 0`: Extract only the page itself
+     - `depth = 1`: Extract the page and all links within it
+     - `depth = 2`: Extract the page, all links within it, and links within those links (2 levels deep)
+     - Maximum depth limit is 2
+   - **Legal pages**: Add law URLs under the `"law"` key as arrays with format `["name", "URL"]`
    - **IPG pages**: Add IPG URLs under the `"ipg"` key, organized by language
    - **PDF files**: Add URLs or local file paths under the `"pdf"` key, organized by language
-   - **Note**: Data sources must be organized by language codes (e.g., `"en"`, `"fr"`). You can support one or more languages per database:
+   - **Page blacklist**: Add URLs to exclude under the `"page_blacklist"` key, organized by language
+   - **Note**: Data sources must be organized by language codes (e.g., `"en"`, `"fr"`). You can support one or more languages per database
 
 ### Supported Data Sources
 
@@ -204,6 +213,11 @@ Run the database creation script:
 ./setup/create_or_update_database.sh
 ```
 
+**Optional Transport Database**: To create the 'transport' database that contains all Canada acts and regulations related to transport, uncomment the following line in `setup/create_or_update_database.sh` before running the script:
+```bash
+#python ./scripts/extract_links_transport_acts_and_reg.py &&
+```
+
 This script will:
 1. Extract content from all configured sources
 2. Process and chunk the documents
@@ -213,7 +227,7 @@ This script will:
 
 - **PDF files** are automatically downloaded to the `static/` folder for offline access
 - **Static files** are accessible via `app/static/...` URLs within the application
-- **Note**: Removing a database from the config file doesn't delete its files from the `static/` folder
+- **Note**: Removing a database JSON file doesn't delete its files from the `static/` folder
 
 <!-- USAGE EXAMPLES -->
 ## Use Case and Portability

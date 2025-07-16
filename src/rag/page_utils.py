@@ -247,9 +247,9 @@ def get_page_csv_row(page: Page) -> List[str]:
     return [page.id, page.title, page.url, " / ".join(page.hierarchy), " / ".join(page.url_hierarchy), "|".join(page.linked_pages) if page.linked_pages else "", ";".join(reference_section_number) if reference_section_number else "", page.date_modified]
 
 def save_to_csv(pages: List[Page], database_name: str, filename: str, lang: str, is_pdf: bool = False):
-    os.makedirs(f"outputs/{database_name}", exist_ok=True)
+    os.makedirs(f"extracted_data/{database_name}", exist_ok=True)
     lang_suffix = "_fr" if lang != "en" else ""
-    csv_path = f"outputs/{database_name}/{filename}{lang_suffix}.csv"
+    csv_path = f"extracted_data/{database_name}/{filename}{lang_suffix}.csv"
     existing_page_ids = []
     
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
@@ -263,7 +263,7 @@ def save_to_csv(pages: List[Page], database_name: str, filename: str, lang: str,
             writer.writerow(get_page_csv_row(page))
             existing_page_ids.append(page.id)
 
-    csv_path = f"outputs/{database_name}/{filename}{lang_suffix}_chunks.csv"
+    csv_path = f"extracted_data/{database_name}/{filename}{lang_suffix}_chunks.csv"
     total_chunks = 0
 
     # Add new code to write chunks CSV
