@@ -4,6 +4,8 @@ import csv
 from dataclasses import dataclass
 import re
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from contextlib import contextmanager
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))  # Add the parent directory to sys.path
@@ -28,6 +30,11 @@ class Page:
     chunks: List[TextChunk]
     date_modified: str
         
+# Context manager to safely handle BeautifulSoup objects and prevent GeneratorExit when using ThreadPoolExecutor.
+@contextmanager
+def safe_beautifulsoup(content):
+    yield BeautifulSoup(content, 'html.parser')
+
 def get_base_url(url: str) -> str:
     parsed_url = urlparse(url)
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}" if parsed_url.scheme else parsed_url.netloc
@@ -111,7 +118,11 @@ def format_header(header: str) -> str:
     if last_slash_position != -1:
         header = header[:last_slash_position]
 
-    return header.upper()
+    # Capitalize the first word if not already
+    if len(header) > 0 and not header[0].isupper():
+        header = header[0].upper() + header[1:]
+
+    return "**" + header + "**"
 
 def chunk_text(text: str, tokenizer, token_limit: int) -> List[TextChunk]:
     chunks = []
@@ -236,9 +247,9 @@ def get_page_csv_row(page: Page) -> List[str]:
     return [page.id, page.title, page.url, " / ".join(page.hierarchy), " / ".join(page.url_hierarchy), "|".join(page.linked_pages) if page.linked_pages else "", ";".join(reference_section_number) if reference_section_number else "", page.date_modified]
 
 def save_to_csv(pages: List[Page], database_name: str, filename: str, lang: str, is_pdf: bool = False):
-    os.makedirs(f"outputs/{database_name}", exist_ok=True)
+    os.makedirs(f"extracted_data/{database_name}", exist_ok=True)
     lang_suffix = "_fr" if lang != "en" else ""
-    csv_path = f"outputs/{database_name}/{filename}{lang_suffix}.csv"
+    csv_path = f"extracted_data/{database_name}/{filename}{lang_suffix}.csv"
     existing_page_ids = []
     
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
@@ -252,7 +263,7 @@ def save_to_csv(pages: List[Page], database_name: str, filename: str, lang: str,
             writer.writerow(get_page_csv_row(page))
             existing_page_ids.append(page.id)
 
-    csv_path = f"outputs/{database_name}/{filename}{lang_suffix}_chunks.csv"
+    csv_path = f"extracted_data/{database_name}/{filename}{lang_suffix}_chunks.csv"
     total_chunks = 0
 
     # Add new code to write chunks CSV

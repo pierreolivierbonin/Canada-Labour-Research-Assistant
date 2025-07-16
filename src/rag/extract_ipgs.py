@@ -8,14 +8,13 @@ For each IPG it:
 """
 
 import requests
-from bs4 import BeautifulSoup
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin
 from dataclasses import dataclass
 import os
 
-from rag.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text, get_base_url
+from rag.page_utils import Page, extract_date_modified, extract_main_content, save_to_csv, chunk_text, get_base_url, safe_beautifulsoup
 
 MAX_WORKERS = 10
 PROCESSED_IPG_IDS = []
@@ -35,24 +34,25 @@ def process_ipg_page(ipg: IPG, database_name, save_html, tokenizer, token_limit,
         language_suffix = "_fr" if current_language != "en" else ""
 
         if save_html:
-            output_dir = f"outputs/{database_name}/ipgs_html{language_suffix}"
+            output_dir = f"extracted_data/{database_name}/ipgs_html{language_suffix}"
             os.makedirs(output_dir, exist_ok=True)
             filename = f"{output_dir}/{ipg.id}{language_suffix}.html"
             
             with open(filename, 'w', encoding='utf-8') as f:
                 f.write(response.text)
         
-        soup = BeautifulSoup(response.content, 'html.parser')
-        text, linked_pages = extract_main_content(soup)
-
-        # Extract date modified
-        date_modified = extract_date_modified(soup)
+        # Use the context manager for BeautifulSoup
+        with safe_beautifulsoup(response.content) as soup:
+            text, linked_pages = extract_main_content(soup)
+            # Extract date modified
+            date_modified = extract_date_modified(soup)
 
         # Add text chunking
         chunks = chunk_text(text, tokenizer, token_limit)
 
         print(f"Processed IPG: {ipg.title} - {full_url} (Hierarchy: {ipg.table_title})")
-        print(f"Saved HTML to: {filename}")
+        if save_html:
+            print(f"Saved HTML to: {filename}")
         
         return Page(
             ipg.id,
@@ -127,31 +127,36 @@ def extract_ipgs_main(ipg_dict:dict, database_name:str, selected_tokenizer, sele
         # Fetch main IPG page
         response = requests.get(url)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Find all tables
-        tables = soup.find_all('table')
-        
-        # Extract IPGs from all tables
+
         all_ipgs = []
-        for table in tables:
-            all_ipgs.extend(extract_ipgs_from_table(table))
         
+        # Use context manager for the main soup object
+        with safe_beautifulsoup(response.content) as soup:
+            # Find all tables
+            tables = soup.find_all('table')
+            
+            # Extract IPGs from all tables
+            for table in tables:
+                all_ipgs.extend(extract_ipgs_from_table(table))
+
         print(f"Found {len(all_ipgs)} IPGs to process")
         
         # Process IPG pages in parallel
         processed_pages = []
+
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # Submit all tasks
             future_to_ipg = {
                 executor.submit(process_ipg_page, ipg, database_name, save_html, selected_tokenizer, selected_token_limit, language, base_url): ipg 
                 for ipg in all_ipgs
             }
             
+            # Process futures
             for future in future_to_ipg:
                 page = future.result()
                 if page:
                     processed_pages.append(page)
-        
+
         save_to_csv(processed_pages, database_name, "ipg", language)
 
 if __name__ == "__main__":
@@ -160,7 +165,7 @@ if __name__ == "__main__":
     from rag.extract_ipgs import extract_ipgs_main
 
     selected_tokenizer, selected_token_limit = get_tokenizer_and_limit()
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]

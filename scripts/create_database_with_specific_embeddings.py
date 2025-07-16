@@ -6,6 +6,7 @@ from chromadb.config import Settings
 import numpy as np
 import pandas as pd
 from time import time
+import re
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Add the parent directory to sys.path
@@ -42,6 +43,10 @@ def main(collection_name:str,
         language_suffix = "_fr" if current_language == "fr" else ""
         filename = filename_arg + language_suffix
 
+        if not os.path.exists(filename + ".csv"):
+            print(f"Warning: File {filename + '.csv'} does not exist")
+            return
+
         # Load and clean page data
         df = pd.read_csv(filename + ".csv", encoding='utf-8')
         df.fillna(value="N/A", inplace=True)
@@ -66,8 +71,8 @@ def main(collection_name:str,
                 "id": df.id.values,
                 "title": df.title.values,
                 "hierarchy": df.hierarchy.values,
-                "section_number": df.section_number.values,
-                "main_section_number": df.section_number.apply(lambda x: x.split('.')[0] if isinstance(x, str) and '.' in x else x).values,
+                "section_number": df.section_number.apply(lambda x: str(x)).values.tolist(), #convert to list to avoid type errors (int64)
+                "main_section_number": df.section_number.apply(lambda x: x.split('.')[0] if isinstance(x, str) and '.' in x else str(x)).values.tolist(), #convert to list to avoid type errors (int64)
                 "hyperlink": df.hyperlink.values
             }
             
@@ -104,12 +109,15 @@ def main(collection_name:str,
             for _, chunk in chunks_df.iterrows():
                 page_id = chunk['page_id']
                 page_meta = page_metadata[page_id]
+
+                # Capitalize text within emphasis markdown (**...**), but only for the embeddings
+                formatted_text = re.sub(r'\*\*(.*?)\*\*', lambda x: x.group(1).upper(), chunk['text'])
                 
                 # Create augmented passage for chunk
                 chunk_fields = {
                     "Title": page_meta['title'],
                     "Hierarchy": page_meta['hierarchy'],
-                    "Text": chunk['text']
+                    "Text": formatted_text
                 }
                 
                 augmented_passages.append(
@@ -130,6 +138,10 @@ def main(collection_name:str,
                 
                 documents.append(chunk['text'])
                 ids.append(chunk['id'])
+
+        if len(augmented_passages) == 0:
+            print(f"Warning: No augmented passages found for {filename + '_chunks.csv'}")
+            return
 
         # Generate embeddings and upsert to collection in batches
         embeddings = model.model_chroma_callable(augmented_passages)
@@ -216,14 +228,14 @@ if __name__ == "__main__":
     
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
 
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
 
     for db in databases:
         db_name = db["name"]
         languages = db.get("languages", ["en", "fr"])  # Default to both languages if not specified
         model_name = selected_model.model_name + "_" + db_name.lower()
 
-        root_path = f"outputs/{db_name}/"
+        root_path = f"extracted_data/{db_name}/"
         data_files_tuples = []
         
         # Create data files tuples for each type of data file
