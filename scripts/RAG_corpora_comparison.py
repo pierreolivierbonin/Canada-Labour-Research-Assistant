@@ -289,3 +289,5 @@ if __name__ == "__main__":
         for jx, j in enumerate(range(len(result[1]["documents"][0]))):
             print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
             print(f"\n{result[1]["documents"][0][j]}")
+
+    # WIP, next step: improve the output by including the metadata + saving in a csv file
