@@ -92,7 +92,7 @@ with safe_beautifulsoup(acts_response.content) as acts_soup:
             links_all_transport_acts.append(href)
 
 # Create a folder for the links
-os.makedirs('outputs', exist_ok=True)
+os.makedirs('extracted_data', exist_ok=True)
 
 # create a set of the links to remove duplicates
 links_all_transport_regulations = list(set(links_all_transport_regulations))
@@ -102,15 +102,15 @@ links_all_transport_acts = list(set(links_all_transport_acts))
 all_links = links_all_transport_acts + links_all_transport_regulations
 
 # Save the regulations to a file
-with open('outputs/all_transport_regulations_links.txt', 'w', encoding='utf-8') as f:
+with open('extracted_data/all_transport_regulations_links.txt', 'w', encoding='utf-8') as f:
     f.writelines(link + '\n' for link in links_all_transport_regulations)
 
 # Save the acts to a file
-with open('outputs/all_transport_acts_links.txt', 'w', encoding='utf-8') as f:
+with open('extracted_data/all_transport_acts_links.txt', 'w', encoding='utf-8') as f:
     f.writelines(link + '\n' for link in links_all_transport_acts)
 
 # Create a combined file with acts first, then regulations
-with open('outputs/all_transport_acts_and_regulations_links.txt', 'w', encoding='utf-8') as f:
+with open('extracted_data/all_transport_acts_and_regulations_links.txt', 'w', encoding='utf-8') as f:
     f.writelines(link + '\n' for link in all_links)
 
 # Create transport_act_reg database configuration
@@ -154,17 +154,17 @@ with open('collections/transport_act_reg.json', 'w', encoding='utf-8') as f:
     json.dump(transport_act_reg, f, indent=2, ensure_ascii=False)
 
 if len(not_included_pages) > 0:
-    with open('outputs/not_included_pages.txt', 'w', encoding='utf-8') as f:
+    with open('extracted_data/not_included_pages.txt', 'w', encoding='utf-8') as f:
         f.writelines(link + '\n' for link in not_included_pages)
 
 print("--------------------------------")
 print(f"Created transport_act_reg database configuration with:")
 print(f"  - {len(transport_act_reg['law']['en'])} law links")
-print(f"  - Saved to outputs/transport_act_reg.json")
+print(f"  - Saved to extracted_data/transport_act_reg.json")
 
 if len(not_included_pages) > 0:
     print("--------------------------------")
     print("Some pages were not valid law pages, the correct links should be added manually if it can be found.")
     print(f"  - {len(not_included_pages)} pages not included")
-    print(f"  - Saved to outputs/not_included_pages.txt")
+    print(f"  - Saved to extracted_data/not_included_pages.txt")
     
