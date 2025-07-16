@@ -15,7 +15,7 @@ from db_config import VectorDBDataFiles
 from rag.rag_extractor import RagExtractor
 
 if __name__ == "__main__":
-    databases = VectorDBDataFiles.databases
+    databases = VectorDBDataFiles.databases()
     extractor = RagExtractor()
 
     for db in databases:
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         save_html = db.get("save_html", False)
         print(f"Processing {db_name}...")
 
-        os.makedirs(f"outputs/{db_name}", exist_ok=True)
+        os.makedirs(f"extracted_data/{db_name}", exist_ok=True)
 
         db_ipg = db.get("ipg")
         if db_ipg:

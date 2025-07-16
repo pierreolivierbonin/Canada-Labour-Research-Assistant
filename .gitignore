@@ -13,12 +13,17 @@ src/RAG_Agent*
 Modelfile
 .docker
 chroma_vectorDB
-scripts/outputs
-/inputs
 /outputs
+/extracted_data
 collections.csv
 sparse_logs
 Llama-3.2*
 vllm/
 static/
 src/CLaRA*
+
+# Ignore all files in collections folder except specific ones
+collections/*
+!collections/equity.json
+!collections/labour.json
+!collections/example.json.txt
