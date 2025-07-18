@@ -333,19 +333,27 @@ if __name__ == "__main__":
     #model.save_pretrained_merged("gemma-3n-finetune", tokenizer, save_method = "merged_16bit",) 
     pretrain_model_name = "gemma3n-finetune"
     
-    model.save_pretrained_merged(pretrain_model_name, tokenizer)
     quantization_type = "F16"
-    model.save_pretrained_gguf(pretrain_model_name, quantization_type = quantization_type)
+    model.save_pretrained_merged(pretrain_model_name, tokenizer) # Merge the model in 16 bit (necessary to save to GGUF afterwards)
+    model.save_pretrained_gguf(pretrain_model_name, quantization_type = quantization_type) # Save the model in GGUF format (needed for ollama)
 
     # Move model.{quantization_type}.gguf to model/model.{quantization_type}.gguf
     os.rename(f"{pretrain_model_name}.{quantization_type}.gguf", f"{pretrain_model_name}/{pretrain_model_name}.{quantization_type}.gguf")
 
     from unsloth.save import create_ollama_modelfile
 
-    # Save Ollama modelfile
+    # Save Ollama modelfile (doesn'T automatically save it otherwise for gemma-3n)
     modelfile = create_ollama_modelfile(tokenizer, pretrain_model_name)
     modelfile_location = None
     if modelfile is not None:
+        # Modify the first line that starts with "FROM"
+        lines = modelfile.split('\n')
+        for i, line in enumerate(lines):
+            if line.strip().startswith('FROM'):
+                lines[i] = f'FROM {pretrain_model_name}.{quantization_type}.gguf'
+                break
+        modelfile = '\n'.join(lines)
+        
         modelfile_location = os.path.join(pretrain_model_name, "Modelfile")
         with open(modelfile_location, "w") as file:
             file.write(modelfile)
