@@ -124,6 +124,16 @@ def format_header(header: str) -> str:
 
     return "**" + header + "**"
 
+def should_skip_chunk(text: str) -> bool:
+    """
+    Check if a chunk should be skipped because it only contains page details with date modified.
+    """
+    # Pattern to match "**Page details**" followed by optional whitespace and "Date modified:" with a date
+    pattern = r'\*\*Page details\*\*\s*Date modified:\s*[\d\-]+'
+    # Remove the pattern and check if what's left is empty/whitespace
+    cleaned_text = re.sub(pattern, '', text.strip())
+    return not cleaned_text.strip()
+
 def chunk_text(text: str, tokenizer, token_limit: int) -> List[TextChunk]:
     chunks = []
     current_text = ""
@@ -209,12 +219,16 @@ def chunk_text(text: str, tokenizer, token_limit: int) -> List[TextChunk]:
                     formatted_headers, current_tag_id = extract_id_from_headers(current_headers.copy(), current_tag_id)
                     formatted_subheaders, current_tag_id = extract_id_from_headers(current_subheaders.copy(), current_tag_id, is_subheader=True)
 
-                    chunks.append(TextChunk(
-                        text=current_text.replace("\n", " ").replace("\r", " "),
-                        headers=formatted_headers,
-                        subheaders=formatted_subheaders,
-                        tag_id=current_tag_id
-                    ))
+                    formatted_text = current_text.replace("\n", " ").replace("\r", " ")
+                    
+                    # Skip chunk if it only contains page details with date modified
+                    if not should_skip_chunk(formatted_text):
+                        chunks.append(TextChunk(
+                            text=formatted_text,
+                            headers=formatted_headers,
+                            subheaders=formatted_subheaders,
+                            tag_id=current_tag_id
+                        ))
 
                 current_text = subsegment
                 current_headers = [segment_title] if segment_title else []
@@ -225,15 +239,20 @@ def chunk_text(text: str, tokenizer, token_limit: int) -> List[TextChunk]:
     if current_text:
         formatted_headers, current_tag_id = extract_id_from_headers(current_headers.copy(), current_tag_id)
         formatted_subheaders, current_tag_id = extract_id_from_headers(current_subheaders.copy(), current_tag_id, is_subheader=True)
+
+        formatted_text = current_text.replace("\n", " ").replace("\r", " ")
         
-        chunks.append(TextChunk(
-            text=current_text.replace("\n", " ").replace("\r", " "),
-            headers=formatted_headers,
-            subheaders=formatted_subheaders,
-            tag_id=current_tag_id
-        ))
+        # Skip chunk if it only contains page details with date modified
+        if not should_skip_chunk(formatted_text):
+            chunks.append(TextChunk(
+                text=formatted_text,
+                headers=formatted_headers,
+                subheaders=formatted_subheaders,
+                tag_id=current_tag_id
+            ))
     
     return chunks
+
 
 # Extract the date modified from the page
 def extract_date_modified(soup) -> str:
