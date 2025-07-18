@@ -362,7 +362,7 @@ def check_words_in_quote_under_threshold(quote):
     return len([word for word in quote.split()]) < QuotationsConfig.min_words_in_quote
 
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
-def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False):
+def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False) -> tuple[str, list]:
     # Extract regular quotes sections
     quotes = re.findall(r'"([^"]*)"', llm_answer)
     
@@ -376,6 +376,8 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     quotes = sorted(quotes, key=lambda x: len(x.split()))
 
     modified_answer = llm_answer
+
+    cited_chunk_ids = set()
     
     # Process each quote
     for quote in quotes:
@@ -418,6 +420,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
                 matched_segment, best_chunk_text, best_chunk_index, start, end,
                 best_chunk_id, best_chunk_title, best_chunk_url, include_html, include_attribution, best_score, include_complete_sentence
             )
+            cited_chunk_ids.add(best_chunk_id)
         else:
             attribution = "(no source found for the quotation)"
 
@@ -432,7 +435,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
         pattern = rf'-*\**\n?\s*(?:\*?\s*"{re.escape(quote)}"|\*\s*{re.escape(quote)})(\s*\([^)]*\([A-Za-z0-9 ]+\)[^)]*\)|\s*\([^)]*\))?\.?;?\**'
         modified_answer = re.sub(pattern, f'\n{replacement_text}{" " + attribution if attribution is not None else ""}', modified_answer)
         
-    return modified_answer
+    return modified_answer, list(cited_chunk_ids)
 
 if __name__ == "__main__":
 
@@ -448,7 +451,7 @@ if __name__ == "__main__":
     """
 
     start_time = time.time()
-    result = verify_and_attribute_quotes(chunks, llm_answer, QuotationsConfig.threshold_rouge_score, True, False, False)
+    result, _ = verify_and_attribute_quotes(chunks, llm_answer, QuotationsConfig.threshold_rouge_score, True, False, False)
     print(result)
     end_time = time.time()
     print(f"Time taken: {end_time - start_time} seconds")

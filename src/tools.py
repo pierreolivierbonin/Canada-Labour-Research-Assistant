@@ -107,7 +107,8 @@ def retrieve_database(database_question,
                       custom_system_prompt,
                       previous_messages,
                       previous_question_chunks,
-                      nb_previous_questions=1):
+                      nb_previous_questions=1,
+                      hardcode_question_section_numbers=None):
 
     if chat_model is None:
         chat_model = ChatbotInterfaceConfig.default_model_local if not is_remote else ChatbotInterfaceConfig.default_model_remote
@@ -127,7 +128,11 @@ def retrieve_database(database_question,
 
     prompt_template_type = get_prompt_template(custom_system_prompt, is_remote, quotations_mode, language)
 
-    question_section_numbers = extract_reference_section_numbers(database_question)
+    if hardcode_question_section_numbers is None:
+        question_section_numbers = extract_reference_section_numbers(database_question)
+    else:
+        question_section_numbers = hardcode_question_section_numbers
+
     documents, metadata, ids, distances = fetch_documents_from_database(
         database_question, language, db_name,question_section_numbers, n_results
     )
@@ -259,7 +264,9 @@ def retrieve_database_local(database_question,
                       custom_system_prompt=None,
                       previous_messages=None,
                       nb_previous_questions=1,
-                      engine="ollama"):
+                      engine="ollama",
+                      hardcode_question_section_numbers=None,
+                      include_html_in_citations=True):
     
     previous_question_chunks = get_previous_question_chunks(previous_messages, nb_previous_questions)
     
@@ -279,11 +286,11 @@ def retrieve_database_local(database_question,
     if not previous_question_chunks:
         previous_question_chunks = []
 
-    formatted_llm_answer = post_processing(formatted_llm_answer, previous_question_chunks + chunks, quotations_mode)
+    formatted_llm_answer, cited_chunk_ids = post_processing(formatted_llm_answer, previous_question_chunks + chunks, quotations_mode, include_html_in_citations)
 
     print_context_info(total_used_tokens, hyperparams)
 
-    return formatted_llm_answer, metadata_tab, documents_tab, chunks, original_answer
+    return formatted_llm_answer, metadata_tab, documents_tab, chunks, original_answer, cited_chunk_ids
 
 def retrieve_database_stream(database_question,
                       language,

@@ -7,14 +7,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 from config import QuotationsConfig
 from citation import verify_and_attribute_quotes, markdown_post_processing
 
-def post_processing(text: str, chunks: list, quotations_mode: bool) -> str:
+def post_processing(text: str, chunks: list, quotations_mode: bool, include_html_in_citations: bool = True) -> tuple[str, list]:
     # Clean any html from the answer
     formatted_text = BeautifulSoup(text, 'html.parser').get_text()
 
     if quotations_mode:
-        formatted_text = verify_and_attribute_quotes(chunks, formatted_text, QuotationsConfig.threshold_rouge_score, True, False, False)
+        formatted_text, cited_chunk_ids = verify_and_attribute_quotes(chunks, formatted_text, QuotationsConfig.threshold_rouge_score, include_html_in_citations, False, False)
 
-    return formatted_text
+    return formatted_text, cited_chunk_ids
 
 def text_generator(paragraph: str):
     buffer = []
@@ -59,7 +59,7 @@ def get_paragraph_generator(stream_generator, chunks: list, quotations_mode: boo
                 previous_unprocessed_paragraphs = unprocessed_paragraphs[:] # clone the unprocessed list
 
                 # Process the complete paragraphs
-                formatted_paragraph = post_processing(current_paragraph, chunks, quotations_mode)
+                formatted_paragraph, _ = post_processing(current_paragraph, chunks, quotations_mode)
                 paragraphs.append(formatted_paragraph)
                 unprocessed_paragraphs.append(current_paragraph)  # Add unprocessed version
                 
@@ -76,7 +76,7 @@ def get_paragraph_generator(stream_generator, chunks: list, quotations_mode: boo
         remaining_text = markdown_post_processing(current_chunk)
         yield combine_paragraphs(paragraphs), combine_paragraphs(unprocessed_paragraphs), text_generator(remaining_text)
 
-        formatted_paragraph = post_processing(remaining_text, chunks, quotations_mode)
+        formatted_paragraph, _ = post_processing(remaining_text, chunks, quotations_mode)
         paragraphs.append(formatted_paragraph)
         unprocessed_paragraphs.append(remaining_text)  # Add unprocessed version
         yield combine_paragraphs(paragraphs), combine_paragraphs(unprocessed_paragraphs), None
