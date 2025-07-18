@@ -3,14 +3,14 @@ import sys
 import os
 
 # Add the src directory to the path so we can import from it
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))) # Add the parent directory to sys.path
 
 from config import vLLMRAGConfig, vLLMChatbotInterfaceConfig
 from tools import retrieve_database_local
 
 def main():
     # Read questions_answers.json
-    with open("questions_answers.json", "r", encoding="utf-8") as f:
+    with open("experiments/create_qa_datasets/questions_answers.json", "r", encoding="utf-8") as f:
         questions_answers = json.load(f)
 
     json_results = []
@@ -49,10 +49,10 @@ def main():
             "answer": answer
         })
 
-    with open("final_questions_answers_fine_tuned_model.json", "w", encoding="utf-8") as f:
+    with open("experiments/create_qa_datasets/final_questions_answers_fine_tuned_model.json", "w", encoding="utf-8") as f:
         json.dump(json_results, f, indent=4)
 
-    print(f"Saved {len(json_results)} results to final_questions_answers.json")
+    print(f"Saved {len(json_results)} results to final_questions_answers_fine_tuned_model.json")
 
 if __name__ == "__main__":
     main() 
