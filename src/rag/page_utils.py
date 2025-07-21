@@ -41,8 +41,7 @@ def get_base_url(url: str) -> str:
     return base_url
 
 def get_tokenizer_and_limit():
-    selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
+    selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True) # TODO: remove hard-coding
 
     selected_tokenizer = selected_model.model.tokenizer
     selected_token_limit = selected_tokenizer.model_max_length - 45 # Remove 45 tokens for the upper limit of the metadata included at the start of each embedding

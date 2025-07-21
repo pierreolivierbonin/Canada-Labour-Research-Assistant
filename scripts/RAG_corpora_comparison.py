@@ -10,6 +10,7 @@ from scipy import stats
 
 from db_config import EmbeddingModel, ModelsConfig
 
+
 class RAGcorporaConsistencyEvaluator:
 
     def __init__(self, 
@@ -61,7 +62,8 @@ class RAGcorporaConsistencyEvaluator:
                                                         embedding_function=self.embedding_model_fn,
                                                         configuration={"hnsw": {"space": self.similarity_fn_name,     # https://docs.trychroma.com/docs/collections/configure#spann-index-configuration
                                                                         "ef_construction": self.ef_construction}})
-        self.reference_all_docs = self.reference_collection.get()["documents"] # that's 1461 chunks
+        print(f"Reference collection has length: {self.reference_collection.count()}")
+        self.reference_all_docs = self.reference_collection.get()["documents"]
         self.reference_all_embeddings = self.reference_collection.get()["embeddings"]
         self.reference_ids = self.reference_collection.get()["ids"]
 
@@ -72,9 +74,10 @@ class RAGcorporaConsistencyEvaluator:
         if self.target_client_path:
             self.target_collection = self.target_client.get_collection(self.target_collection_name, 
                                                         embedding_function=self.embedding_model_fn)
-            self.target_all_docs = self.target_collection.get()["documents"] # that's 1461 chunks
+            self.target_all_docs = self.target_collection.get()["documents"]
             self.target_embeddings = self.target_collection.get()["embeddings"]
             self.target_ids = self.target_collection.get()["ids"]
+            print(f"Target collection has length: {self.target_collection.count()}")
 
 
     def find_self_consistency_scores(self, save_to_disk=False):
@@ -143,7 +146,7 @@ class RAGcorporaConsistencyEvaluator:
 
             results = self.target_collection.query(query_texts=i, 
                                             n_results=self.top_n, 
-                                            include=["metadatas", "documents", "distances"])
+                                            include=["embeddings", "metadatas", "documents", "distances"])
             if self.verbose:
                 print(f"\nDocument chunk cosine distances for top-{self.top_n} matches: {[format(d, '.2f') for d in results["distances"][0]]}")
             dist_description.append(stats.describe(results["distances"][0]))
@@ -178,27 +181,35 @@ if __name__ == "__main__":
 
     from db_config import EmbeddingModel, ModelsConfig
 
+    from sentence_transformers import SentenceTransformer, CrossEncoder, util
+
+
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
 
-    # run on a random sample of 25 document chunks
+    # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
                                              reference_client_path="./chroma_vectorDB_comparison",
                                              reference_collection_name="labour_baseline",
                                              target_client_path="./chroma_vectorDB",
                                              target_collection_name="all-mpnet-base-v2_labour",
-                                             similarity_fn_name="cosine",
+                                             similarity_fn_name="cosine",   # should be consistent with the function used at creation time
                                              ef_construction=1000,
                                              top_n=10,
-                                             random_sample=True,
-                                             random_n=5,
+                                             random_sample=True,            # set this to False to run on entire collection (ref. or target) 
+                                             random_n=5,                    # this will have no effect if random_sample=Falses
                                              seed=1837,
                                              verbose=True
                                              )
     
     results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
+    print("")
 
-    # # manual validation for self-consistency: 
-    # # How distant are the queried document chunks from the retrieved documents chunks of the same collection?
+    # STEP 2 - Rerank using Cross-Encoders (https://sbert.net/examples/sentence_transformer/applications/retrieve_rerank/README.html)
+    #The bi-encoder will retrieve 100 documents. We use a cross-encoder, to re-rank the results list to improve the quality
+    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L6-v2')
+
+
+    # # How distant are the queried document chunks from the reference collection to the chunks of the target collection?
     # for ix, result in enumerate(results_self_consistency):
     #     print(f"\nDocument queried... \n\n{result[0]}")
     #     print(f"\nPreviewing top-{evaluator.top_n} matches...")
@@ -206,62 +217,3 @@ if __name__ == "__main__":
     #     for jx, j in enumerate(range(len(result[1]["documents"][0]))):
     #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
     #         print(f"\n{result[1]["documents"][0][j]}")
-
-    # # manual validation for comparative consistency: 
-    # # How distant are the queried chunks of the reference collection from the retrieved chunks of the target collection?
-    # results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
-
-
-    # for ix, result in enumerate(results_comparative_consistency):
-    #     print(f"\nDocument queried... \n\n{result[0]}")
-    #     print(f"\nPreviewing top-{evaluator.top_n} matches...")
-        
-
-    #     for jx, j in enumerate(range(len(result[1]["documents"][0]))):
-    #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
-    #         print(f"\n{result[1]["documents"][0][j]}")
-
-
-
-    # # run on the entire collection of 1461 document chunks with target collection
-    # evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
-    #                                          reference_client_path="./chroma_vectorDB_comparison",
-    #                                          reference_collection_name="labour_baseline",
-    #                                          target_client_path="./chroma_vectorDB",
-    #                                          target_collection_name="all-mpnet-base-v2_transport_act_reg",
-    #                                          similarity_fn_name="cosine",
-    #                                          ef_construction=1000,
-    #                                          top_n=73,                        # total chunks = 1461, so 1461*0.05==73 for top 5% matches
-    #                                          random_sample=True,
-    #                                          random_n=10,
-    #                                          seed=1837
-    #                                          )
-    
-    # # evaluator.find_self_consistency_scores(save_to_disk=True)
-    # results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
-
-    # # manual validation for self-consistency: 
-    # # How distant are the queried document chunks from the retrieved documents chunks of the same collection?
-    # for ix, result in enumerate(results_self_consistency):
-    #     print(f"\nDocument queried... \n\n{result[0]}")
-    #     print(f"\nPreviewing top-{evaluator.top_n} matches...")
-
-    #     for jx, j in enumerate(range(len(result[1]["documents"][0]))):
-    #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
-    #         print(f"\n{result[1]["documents"][0][j]}")
-    
-
-
-    # # manual validation for comparative consistency: 
-    # # How distant are the queried chunks of the reference collection from the retrieved chunks of the target collection?
-    # results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
-
-    # for ix, result in enumerate(results_comparative_consistency):
-    #     print(f"\nDocument queried... \n\n{result[0]}")
-    #     print(f"\nPreviewing top-{evaluator.top_n} matches...")
-        
-    #     for jx, j in enumerate(range(len(result[1]["documents"][0]))):
-    #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
-    #         print(f"\n{result[1]["documents"][0][j]}")
-
-    # WIP, next step: improve the output by including the metadata + saving in a csv file
