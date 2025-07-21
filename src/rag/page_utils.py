@@ -129,7 +129,7 @@ def should_skip_chunk(text: str) -> bool:
     Check if a chunk should be skipped because it only contains page details with date modified.
     """
     # Pattern to match "**Page details**" followed by optional whitespace and "Date modified:" with a date
-    pattern = r'\*\*Page details\*\*\s*Date modified:\s*[\d\-]+'
+    pattern = r'\*\*Page details\*\*\s*Date modified\s*:\s*[\d\-]+|\*\*Détails de la page\*\*\s*Date de modification\s*:\s*[\d\-]+'
     # Remove the pattern and check if what's left is empty/whitespace
     cleaned_text = re.sub(pattern, '', text.strip())
     return not cleaned_text.strip()
