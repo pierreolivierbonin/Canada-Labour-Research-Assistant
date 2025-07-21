@@ -187,9 +187,7 @@ def extract_page_text(soup, url, is_schedule = False) -> Optional[List[SectionIt
             tag_id=section_container_id
         ))
         
-        return sections
-    
-    return None
+    return sections
 
 def process_toc_page(toc_url, database_name, file_name, tokenizer, token_limit, current_language):
     
