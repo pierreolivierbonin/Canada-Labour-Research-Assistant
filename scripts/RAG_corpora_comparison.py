@@ -7,6 +7,7 @@ import warnings
 import chromadb
 from chromadb.config import Settings
 from scipy import stats
+from sentence_transformers import CrossEncoder
 
 from db_config import EmbeddingModel, ModelsConfig
 
@@ -19,6 +20,7 @@ class RAGcorporaConsistencyEvaluator:
                  reference_collection_name:str, 
                  similarity_fn_name:str,
                  ef_construction:int,
+                 cross_encoder:str = "cross-encoder/ms-marco-MiniLM-L6-v2",
                  target_client_path:str=None,
                  target_collection_name:str=None,
                  top_n:int=50,
@@ -44,6 +46,10 @@ class RAGcorporaConsistencyEvaluator:
         '''
         
         self.embedding_model_fn = embedding_model_fn
+        try:
+            self.cross_encoder = CrossEncoder(cross_encoder)
+        except NameError as e:
+            print(e)
         self.reference_client_path = reference_client_path
         self.reference_collection_name = reference_collection_name
         self.target_client_path = target_client_path
@@ -64,6 +70,7 @@ class RAGcorporaConsistencyEvaluator:
                                                                         "ef_construction": self.ef_construction}})
         print(f"Reference collection has length: {self.reference_collection.count()}")
         self.reference_all_docs = self.reference_collection.get()["documents"]
+        self.reference_all_metadata = self.reference_collection.get()["metadatas"]
         self.reference_all_embeddings = self.reference_collection.get()["embeddings"]
         self.reference_ids = self.reference_collection.get()["ids"]
 
@@ -136,13 +143,13 @@ class RAGcorporaConsistencyEvaluator:
             random.seed(1837)
             rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
             self.rand_sample = itemgetter(*rand_ix)(self.reference_all_docs)
-        self.target_all_docs = self.rand_sample if self.rand_sample else self.reference_all_docs
+        self.reference_all_docs = self.rand_sample if self.rand_sample else self.reference_all_docs
 
         dist_description = []
         self.results_compiled = []
         self.target_cosine_dists = []
 
-        for ix, i in enumerate(self.target_all_docs):
+        for i,j in zip(self.reference_all_docs, self.reference_all_metadata):
 
             results = self.target_collection.query(query_texts=i, 
                                             n_results=self.top_n, 
@@ -150,7 +157,7 @@ class RAGcorporaConsistencyEvaluator:
             if self.verbose:
                 print(f"\nDocument chunk cosine distances for top-{self.top_n} matches: {[format(d, '.2f') for d in results["distances"][0]]}")
             dist_description.append(stats.describe(results["distances"][0]))
-            self.results_compiled.append((i, results))
+            self.results_compiled.append({"reference": (j,i), "target": results})
             self.target_cosine_dists.append(results["distances"][0])
 
         if save_to_disk:
@@ -179,19 +186,19 @@ if __name__ == "__main__":
     Step 2: 
     '''
 
+
     from db_config import EmbeddingModel, ModelsConfig
-
-    from sentence_transformers import SentenceTransformer, CrossEncoder, util
-
+    from sentence_transformers import CrossEncoder
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
+    cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
 
     # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
-                                             reference_client_path="./chroma_vectorDB_comparison",
-                                             reference_collection_name="labour_baseline",
+                                             reference_client_path="./chroma_vectorDB",
+                                             reference_collection_name="all-mpnet-base-v2_labour",
                                              target_client_path="./chroma_vectorDB",
-                                             target_collection_name="all-mpnet-base-v2_labour",
+                                             target_collection_name="all-mpnet-base-v2_transport_act_reg",
                                              similarity_fn_name="cosine",   # should be consistent with the function used at creation time
                                              ef_construction=1000,
                                              top_n=10,
@@ -203,11 +210,21 @@ if __name__ == "__main__":
     
     results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
     print("")
+    sentence_pairs = []
+    for i in range(5):
+        for j in range(10):
+            sentence_pairs.append((results_self_consistency[i][0], results_self_consistency[i][0], results_self_consistency[0][1]["documents"][0][j]))
+    
+    print("")
+
+
+
+    # cross_encoder_scores = []
+    # for i in range(5):
+    #     # [cross_encoder_scores.append(j) for j in ]
 
     # STEP 2 - Rerank using Cross-Encoders (https://sbert.net/examples/sentence_transformer/applications/retrieve_rerank/README.html)
-    #The bi-encoder will retrieve 100 documents. We use a cross-encoder, to re-rank the results list to improve the quality
-    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L6-v2')
-
+    #The bi-encoder will retrieve 100 documents. We use a cross-encoder, to re-rank the results list to improve the retrieval quality
 
     # # How distant are the queried document chunks from the reference collection to the chunks of the target collection?
     # for ix, result in enumerate(results_self_consistency):
