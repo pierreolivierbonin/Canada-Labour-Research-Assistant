@@ -187,6 +187,7 @@ if __name__ == "__main__":
     '''
 
     import csv
+    import os
     import time
 
     import numpy as np
@@ -213,9 +214,11 @@ if __name__ == "__main__":
                                              verbose=True
                                              )
     
+    # Step 1 - Get cosine distances
     results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
     print("")
 
+    # Step 2 - Refine by getting cross-encoder scores
     cross_encoder_scores = []
     for i in range(len(results_self_consistency)):
         # print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
@@ -225,18 +228,25 @@ if __name__ == "__main__":
                                                               results_self_consistency[0]["target"]["documents"][0][j]))
                                                               )
 
-    def sigmoid(z):
-        return 1/(1 + np.exp(-z))
-    
-    with open("./output_overlaps", "w",  newline='', encoding="utf-8") as f:
-            
+    # Step 3 - Save results, ordered by highest to lowest scores
+    if not os.path.exists("./overlap_results/"):
+        print("Warning: Folder 'overlap_results does not exist. Creating it...")
+        os.mkdir("./overlap_results")
+
+    with open("./overlap_results/results.csv", "w",  newline='', encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["scores",
+                         "query", 
+                         "match"])
+        
         for i in range(len(results_self_consistency)):
             start_time = time.time()
 
             query = results_self_consistency[i]["reference"][1]
             model_inputs = [[query, passage] for passage in results_self_consistency[i]["target"]["documents"][0]]
             scores = cross_encoder.predict(model_inputs)
-            scores = sigmoid(scores)
+
+
 
             # Sort the scores in decreasing order
             results = [{"input": inp, "score": score} for inp, score in zip(model_inputs, scores)]
@@ -248,6 +258,11 @@ if __name__ == "__main__":
                 print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
 
             print("==========")
+    
+            for i in range(len(results)):
+                writer.writerow([results[i]["score"], 
+                                 query,
+                                 results[i]["input"][1]])
 
     
     # # Search in a loop for the individual queries
