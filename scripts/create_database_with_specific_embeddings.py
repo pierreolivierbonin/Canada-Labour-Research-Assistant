@@ -237,7 +237,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
-    selected_model.assign_model_and_attributes()
 
     databases = VectorDBDataFiles.databases()
 

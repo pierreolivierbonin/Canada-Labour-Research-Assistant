@@ -88,7 +88,7 @@ with safe_beautifulsoup(acts_response.content) as acts_soup:
     # Look for the tbody tag and extract all links from them
     for a in tbody.find_all('a', href=True):
         href = process_href(a.get('href'))
-        if href and "laws-lois.justice.gc.ca/eng/acts/L-2" not in href:
+        if href and "laws-lois.justice.gc.ca/eng/acts/L-2" not in href: # this works and skips the CLC but it still gets created elsewhere somehow
             links_all_transport_acts.append(href)
 
 # Create a folder for the links
