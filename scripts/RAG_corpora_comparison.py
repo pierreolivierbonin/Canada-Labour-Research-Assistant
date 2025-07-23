@@ -190,7 +190,7 @@ if __name__ == "__main__":
     import os
     import time
 
-    import numpy as np
+    from ollama import chat, ChatResponse
     from sentence_transformers import CrossEncoder
 
     from db_config import EmbeddingModel, ModelsConfig
@@ -234,10 +234,11 @@ if __name__ == "__main__":
         os.mkdir("./overlap_results")
 
     with open("./overlap_results/results.csv", "w",  newline='', encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["scores",
-                         "query", 
-                         "match"])
+        writer = csv.writer(f, delimiter='|')
+        writer.writerow(["score",
+                         "llm_eval",
+                         "labour_excerpt", 
+                         "transport_canada_excerpt"])
         
         for i in range(len(results_self_consistency)):
             start_time = time.time()
@@ -257,52 +258,19 @@ if __name__ == "__main__":
             for hit in results:
                 print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
 
-            print("==========")
+                # Step 4 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is
+                system_prompt = '''Please evaluate whether an overlap exists between the following query and passage:\n\n'''
+                response: ChatResponse = chat(model='gemma3n:latest', 
+                                            messages=[
+                                                        {
+                                                            'role': 'user',
+                                                            'content': system_prompt+f"Query:{hit["input"][0]}\n\nPassage:{hit["input"][1]}",
+                                                        },
+                                                        ])
+                print(f"\n\n================LLM RESPONSE================\n{response.message.content}")
     
-            for i in range(len(results)):
-                writer.writerow([results[i]["score"], 
-                                 query,
-                                 results[i]["input"][1]])
 
-    
-    # # Search in a loop for the individual queries
-    # for i in range(len(results_self_consistency)):
-    #     start_time = time.time()
-
-    #     # Concatenate the query and all passages and predict the scores for the pairs [query, passage]
-    #     model_inputs = [[query, passage] for passage in passages]
-    #     scores = model.predict(model_inputs)
-
-    #     # Sort the scores in decreasing order
-    #     results = [{"input": inp, "score": score} for inp, score in zip(model_inputs, scores)]
-    #     results = sorted(results, key=lambda x: x["score"], reverse=True)
-
-    #     print("\nQuery:", query)
-    #     print(f"\nSearch took {time.time() - start_time:.2f} seconds")
-    #     for hit in results[0:5]:
-    #         print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1])
-
-    #     print("==========")
-
-    # print(cross_encoder_scores)
-        
-
-    print("")
-
-
-
-    # cross_encoder_scores = []
-    # for i in range(5):
-    #     # [cross_encoder_scores.append(j) for j in ]
-
-    # STEP 2 - Rerank using Cross-Encoders (https://sbert.net/examples/sentence_transformer/applications/retrieve_rerank/README.html)
-    #The bi-encoder will retrieve 100 documents. We use a cross-encoder, to re-rank the results list to improve the retrieval quality
-
-    # # How distant are the queried document chunks from the reference collection to the chunks of the target collection?
-    # for ix, result in enumerate(results_self_consistency):
-    #     print(f"\nDocument queried... \n\n{result[0]}")
-    #     print(f"\nPreviewing top-{evaluator.top_n} matches...")
-
-    #     for jx, j in enumerate(range(len(result[1]["documents"][0]))):
-    #         print(f"\nViewing matched Document-chunk rank #{jx+1}... \n...for Document-chunk query #{ix+1}...")
-    #         print(f"\n{result[1]["documents"][0][j]}")
+                writer.writerow([hit["score"], 
+                                 response.message.content,
+                                 hit["input"][0],
+                                 hit["input"][1]])
