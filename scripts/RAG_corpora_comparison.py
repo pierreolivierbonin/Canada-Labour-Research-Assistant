@@ -186,12 +186,17 @@ if __name__ == "__main__":
     Step 2: 
     '''
 
+    import csv
+    import time
+
+    import numpy as np
+    from sentence_transformers import CrossEncoder
 
     from db_config import EmbeddingModel, ModelsConfig
-    from sentence_transformers import CrossEncoder
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
     cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
+    # cross_encoder = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L2")
 
     # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
@@ -210,11 +215,63 @@ if __name__ == "__main__":
     
     results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
     print("")
-    sentence_pairs = []
-    for i in range(5):
-        for j in range(10):
-            sentence_pairs.append((results_self_consistency[i][0], results_self_consistency[i][0], results_self_consistency[0][1]["documents"][0][j]))
+
+    cross_encoder_scores = []
+    for i in range(len(results_self_consistency)):
+        # print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
+        for j in range(len(results_self_consistency[0]["target"]["documents"][0])):
+            # print(f"\nPreviewing target document chunk...\n{results_self_consistency[0]["target"]["documents"][0][j]}")
+            cross_encoder_scores.append(cross_encoder.predict((results_self_consistency[i]["reference"][1], 
+                                                              results_self_consistency[0]["target"]["documents"][0][j]))
+                                                              )
+
+    def sigmoid(z):
+        return 1/(1 + np.exp(-z))
     
+    with open("./output_overlaps", "w",  newline='', encoding="utf-8") as f:
+            
+        for i in range(len(results_self_consistency)):
+            start_time = time.time()
+
+            query = results_self_consistency[i]["reference"][1]
+            model_inputs = [[query, passage] for passage in results_self_consistency[i]["target"]["documents"][0]]
+            scores = cross_encoder.predict(model_inputs)
+            scores = sigmoid(scores)
+
+            # Sort the scores in decreasing order
+            results = [{"input": inp, "score": score} for inp, score in zip(model_inputs, scores)]
+            results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+            print("\nQuery:", query[:500]+"(...)")
+            print(f"\nSearch took {time.time() - start_time:.2f} seconds")
+            for hit in results:
+                print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
+
+            print("==========")
+
+    
+    # # Search in a loop for the individual queries
+    # for i in range(len(results_self_consistency)):
+    #     start_time = time.time()
+
+    #     # Concatenate the query and all passages and predict the scores for the pairs [query, passage]
+    #     model_inputs = [[query, passage] for passage in passages]
+    #     scores = model.predict(model_inputs)
+
+    #     # Sort the scores in decreasing order
+    #     results = [{"input": inp, "score": score} for inp, score in zip(model_inputs, scores)]
+    #     results = sorted(results, key=lambda x: x["score"], reverse=True)
+
+    #     print("\nQuery:", query)
+    #     print(f"\nSearch took {time.time() - start_time:.2f} seconds")
+    #     for hit in results[0:5]:
+    #         print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1])
+
+    #     print("==========")
+
+    # print(cross_encoder_scores)
+        
+
     print("")
 
 
