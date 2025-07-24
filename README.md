@@ -175,9 +175,15 @@ Once this setup completed, you will be able to switch to **remote mode** via the
 <!-- CREATE DATABASE -->
 ## Database Creation Explained & How to Create Your Own Knowledge Base
 
-The application can be customized for your own use case by creating new databases. See below for detailed instructions.
+The application can be customized for your own use case by creating new databases. To add a new database:
 
-> Refer to [collections/example.json.txt](./collections/example.json.txt) for a template config file.
+1. **Create a JSON configuration file** in the `collections/` folder
+2. **Update `VectorDBDataFiles.included_databases`** in `db_config.py` to include your database 
+3. **Run the database creation script** - your database will be automatically created and included in the app
+
+See below for detailed instructions.
+
+> Refer to [collections/example.json](./collections/example.json) for a template config file, or [collections/example_with_comments.txt](./collections/example_with_comments.txt) for a detailed commented example with path format explanations.
 
 ### Configuration
 
@@ -196,32 +202,33 @@ The application can be customized for your own use case by creating new database
      - Maximum depth limit is 2
    - **Legal pages**: Add law URLs under the `"law"` key as arrays with format `["name", "URL"]`
    - **IPG pages**: Add IPG URLs under the `"ipg"` key, organized by language
-   - **PDF files**: Add URLs or local file paths under the `"pdf"` key, organized by language
+   - **PDF files**: Add URLs or local file/folder paths under the `"pdf"` key, organized by language. Local paths can be anywhere on your computer using OS-appropriate formats.
    - **Page blacklist**: Add URLs to exclude under the `"page_blacklist"` key, organized by language
    - **Note**: Data sources must be organized by language codes (e.g., `"en"`, `"fr"`). You can support one or more languages per database
-
+4. **Add your database to the application** by updating `VectorDBDataFiles.included_databases` in [`db_config.py`](./db_config.py). Add your database name (must match the `"name"` field in your JSON file) to the list. For example:
+   ```python
+   included_databases = ["labour", "equity", "transport", "your_new_database"]
+   ```
+   
 ### Supported Data Sources
 
 - **External PDFs**: Direct URLs to PDF files
-- **Local PDFs**: File paths to local PDFs (supports folder paths to include all PDFs in a directory)
+- **Local PDFs**: Absolute file paths to local PDFs anywhere on your computer (supports folder paths to include all PDFs in a directory). Use OS-appropriate path formats (e.g., `C:/Documents/file.pdf` on Windows, `/home/user/Documents/file.pdf` on Linux/Mac)
 - **Web pages**: URLs to web content (supports blacklisting specific pages)
+
+> **Important**: Do not manually copy pdf files into the application folder. Simply specify the paths to files/folders that already exist on your computer. The database creation script will automatically import and process these files for you.
 
 ### Building Your Database
 
-Run the database creation script:
+Once you have created your JSON configuration file and updated `VectorDBDataFiles.included_databases`, run the database creation script:
 ```bash
 ./setup/create_or_update_database.sh
 ```
 
-**Optional Transport Database**: To create the 'transport' database that contains all Canada acts and regulations related to transport, uncomment the following line in `setup/create_or_update_database.sh` before running the script:
-```bash
-#python ./scripts/extract_links_transport_acts_and_reg.py &&
-```
-
-This script will:
-1. Extract content from all configured sources
-2. Process and chunk the documents
-3. Create a vector database for RAG (Retrieval-Augmented Generation)
+This script will automatically:
+1. Process all databases listed in `VectorDBDataFiles.included_databases`
+2. Extract content from all configured sources in your JSON files
+3. Create vector databases for RAG (Retrieval-Augmented Generation)
 
 ### File Management
 
@@ -243,6 +250,9 @@ Labour Database:
 
 Equity Database:
 * Workplace equity, etc.
+
+Transport Database:
+* Acts and regulations related to transport.
 
 <!-- Privacy -->
 ## Telemetry and API Calls

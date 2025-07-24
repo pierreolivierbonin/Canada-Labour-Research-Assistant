@@ -1,0 +1,38 @@
+{
+    "name": "another_use_case",
+    "is_default": true, 
+    "save_html": true, 
+    "languages": ["en", "fr"],
+    "ressource_name": {
+        "en": "Another use case"
+    },
+    "pdf": {                      
+        "en": [
+            "https://www.example.com/pdf/example.pdf",
+            "C:/Documents/file.pdf",
+            "C:/Documents/pdf_folder/"
+        ]
+    },
+    "ipg": {                      
+        "en": "https://www.canada.ca/en/employment-social-development/programs/laws-regulations/labour/interpretations-policies.html"
+    },
+    "law": {
+        "en": [
+            ["example_act", "https://laws-lois.justice.gc.ca/eng/acts/e-1/"],
+            ["example_regulations", "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._123/"]
+        ]
+    },
+    "page": {                     
+        "en": [                   
+            ["MAIN_PAGE", "https://www.example.com/en/main.html", 0],
+            ["SERVICES", "https://www.example.com/en/services.html", 1],
+            ["RESOURCES", "https://www.example.com/en/resources.html", 2]
+        ]
+    },
+    "page_blacklist": {           
+        "en": [
+            "/en/news/",
+            "/en/contact.html"
+        ]
+    }
+}
