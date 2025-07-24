@@ -284,8 +284,11 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
+Special thanks to Hadi Hojjati @hhojjati98 for the stimulating discussions, brainstormings, and general advice. Both of us appreciated those. 
 
-We would like to thank everyone who participates in conducting open research as well as sharing knowledge and code. In particular, we are grateful to the creators and contributors who made it possible to build CLaRA:
+We would like to thank everyone who participates in conducting open research as well as sharing knowledge and code. 
+
+In particular, we are grateful to the creators and contributors who made it possible to build CLaRA:
 
 #### Webcrawling & Preprocessing
 * Webcrawling and html processing: [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)
