@@ -5,10 +5,12 @@ import os
 # Add the src directory to the path so we can import from it
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))) # Add the parent directory to sys.path
 
-from config import vLLMRAGConfig, vLLMChatbotInterfaceConfig
+from config import OllamaRAGConfig, ChatbotInterfaceConfig
 from tools import retrieve_database_local
 
 def main():
+    engine = "ollama"
+    
     # Read questions_answers.json
     with open("experiments/create_qa_datasets/questions_answers.json", "r", encoding="utf-8") as f:
         questions_answers = json.load(f)
@@ -22,7 +24,7 @@ def main():
         #question = f"The following question is related to section {section_number}\n{question}"
 
         print(f"Question {x+1}/{len(questions_answers)} (section {section_number}): {question}")
-        answer, _, _, chunks, original_answer, cited_chunk_ids = retrieve_database_local(question, "en", "labour", chat_model=vLLMChatbotInterfaceConfig.default_model_local, hyperparams=vLLMRAGConfig.HyperparametersAccuracyConfig, engine="vllm", n_results=5, is_remote=False, hardcode_question_section_numbers=[section_number], include_html_in_citations=False)
+        answer, _, _, chunks, original_answer, cited_chunk_ids = retrieve_database_local(question, "en", "labour", chat_model=ChatbotInterfaceConfig.default_model_local, hyperparams=OllamaRAGConfig.HyperparametersAccuracyConfig, engine=engine, n_results=5, is_remote=False, hardcode_question_section_numbers=[section_number], include_html_in_citations=False)
 
         # Remove all chunks that are not in the cited_chunk_ids
         cited_chunks = [chunk for chunk in chunks if chunk[2] in cited_chunk_ids]
@@ -49,10 +51,12 @@ def main():
             "answer": answer
         })
 
-    with open("experiments/create_qa_datasets/final_questions_answers_fine_tuned_model.json", "w", encoding="utf-8") as f:
+    filename = "gemma3n_questions_answers.json"
+
+    with open(f"experiments/create_qa_datasets/{filename}", "w", encoding="utf-8") as f:
         json.dump(json_results, f, indent=4)
 
-    print(f"Saved {len(json_results)} results to final_questions_answers_fine_tuned_model.json")
+    print(f"Saved {len(json_results)} results to {filename}")
 
 if __name__ == "__main__":
     main() 
