@@ -220,10 +220,10 @@ if __name__ == "__main__":
     from db_config import EmbeddingModel, ModelsConfig
 
     parser = argparse.ArgumentParser(allow_abbrev=True)
-    parser.add_argument("-e", "--exclude",
+    parser.add_argument("-i", "--include",
                         action="extend",
                         required=False,
-                        type=str,
+                        type=str,  
                         nargs="+")
 
     args = parser.parse_args()
@@ -231,19 +231,11 @@ if __name__ == "__main__":
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["multi_qa"], trust_remote_code=True)
     selected_model.assign_model_and_attributes()
 
-    databases = VectorDBDataFiles.databases()
+    filtered_databases = VectorDBDataFiles.databases(args.include)
 
-    to_pop = set()
-    for ix, i in enumerate(databases):
-        for j in args.exclude:
-            if j in i["name"]:
-                to_pop.add(ix)
-                break
+    print(f"Included databases: {[db['name'] for db in filtered_databases]}")
 
-    for i in sorted(to_pop, reverse=True):
-        del(databases[i])
-
-    for db in databases:
+    for db in filtered_databases:
         db_name = db["name"]
         languages = db.get("languages", ["en", "fr"])  # Default to both languages if not specified
         model_name = selected_model.model_name + "_" + db_name.lower()

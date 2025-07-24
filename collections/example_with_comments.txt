@@ -11,8 +11,8 @@
     "pdf": {                      
         "en": [
             "https://www.example.com/pdf/example.pdf",      #<----- Remote server PDF URL
-            "C:/Users/<username>/<data_dir>/example.pdf",   #<----- Local PDF file path
-            "../<data_dir>/pdf_folder/"                     #<----- Local folder containing PDFs
+            "C:/Documents/file.pdf",   #<----- Local PDF file path (Could be anywhere on the computer)
+            "C:/Documents/pdf_folder"                     #<----- Local folder containing PDFs (Could be anywhere on the computer)
         ]
     },
 

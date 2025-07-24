@@ -15,33 +15,23 @@ from db_config import VectorDBDataFiles
 from rag.rag_extractor import RagExtractor
 
 if __name__ == "__main__":
-
-
     import argparse
 
     parser = argparse.ArgumentParser(allow_abbrev=True)
-    parser.add_argument("-e", "--exclude",
+    parser.add_argument("-i", "--include",
                         action="extend",
                         required=False,
                         type=str,
                         nargs="+")
 
     args = parser.parse_args()
-
-    databases = VectorDBDataFiles.databases()
     extractor = RagExtractor()
 
-    to_pop = set()
-    for ix, i in enumerate(databases):
-        for j in args.exclude:
-            if j in i["name"]:
-                to_pop.add(ix)
-                break
+    filtered_databases = VectorDBDataFiles.databases(args.include)
 
-    for i in sorted(to_pop, reverse=True):
-        del(databases[i])
+    print(f"Included databases: {[db['name'] for db in filtered_databases]}")
 
-    for db in databases:
+    for db in filtered_databases:
         db_name = db["name"]
         save_html = db.get("save_html", False)
         print(f"Processing {db_name}...")
