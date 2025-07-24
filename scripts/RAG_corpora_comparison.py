@@ -143,7 +143,7 @@ class RAGcorporaConsistencyEvaluator:
             random.seed(1837)
             rand_ix = random.choices(range(self.reference_collection.count()), k=self.random_n)
             self.rand_sample = itemgetter(*rand_ix)(self.reference_all_docs)
-        self.reference_all_docs = self.rand_sample if self.rand_sample else self.reference_all_docs
+        self.reference_all_docs = self.rand_sample if self.random_sample else self.reference_all_docs
 
         dist_description = []
         self.results_compiled = []
@@ -208,17 +208,17 @@ if __name__ == "__main__":
                                              similarity_fn_name="cosine",   # should be consistent with the function used at creation time
                                              ef_construction=1000,
                                              top_n=10,
-                                             random_sample=True,            # set this to False to run on entire collection (ref. or target) 
-                                             random_n=5,                    # this will have no effect if random_sample=Falses
+                                             random_sample=False,            # set this to False to run on entire collection (ref. or target) 
+                                            #  random_n=5,                    # this will have no effect if random_sample=Falses
                                              seed=1837,
                                              verbose=True
                                              )
     
-    # Step 1 - Get cosine distances
+    # Step 2 - Get cosine distances
     results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
     print("")
 
-    # Step 2 - Refine by getting cross-encoder scores
+    # Step 3 - Refine by getting cross-encoder scores
     cross_encoder_scores = []
     for i in range(len(results_self_consistency)):
         # print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                                                               results_self_consistency[0]["target"]["documents"][0][j]))
                                                               )
 
-    # Step 3 - Save results, ordered by highest to lowest scores
+    # Step 4 - Save results, ordered by highest to lowest scores
     if not os.path.exists("./overlap_results/"):
         print("Warning: Folder 'overlap_results does not exist. Creating it...")
         os.mkdir("./overlap_results")
