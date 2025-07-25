@@ -9,7 +9,9 @@ from chromadb.errors import NotFoundError
 import streamlit as st
 import torch
 
+from db_config import VectorDBDataFiles
 from config import ChatbotInterfaceConfig, ChromaDBSettings, CustomEmbeddingFunction, PromptTemplateType, RAGConfig, OllamaRAGConfig, QuotationsConfig, ConsoleConfig
+
 from local import get_ollama_answer_local, get_ollama_answer_local_stream
 from local_vllm import get_vllm_answer, get_vllm_answer_stream
 from remote import get_llm_answer_remote, get_llm_answer_remote_stream
@@ -37,6 +39,21 @@ def _load_vector_database(language,
         collection = client.get_collection(collection_name_in_language, 
                                            embedding_function=sentence_transformer_ef)
     except NotFoundError:
+        # Try to fallback to the first available language for this database
+        try:
+            databases = VectorDBDataFiles.databases([db_name])
+            target_db = databases[0] if databases else None
+            
+            if target_db and target_db.get("languages"):
+                fallback_language = target_db["languages"][0]
+                fallback_collection_name = collection_name + "_" + db_name.lower() + ("_" + fallback_language if fallback_language != "en" else "")
+                collection = client.get_collection(fallback_collection_name, 
+                                                   embedding_function=sentence_transformer_ef)
+                return collection
+        except NotFoundError:
+            pass
+        
+        # If Error is raised above, or the collection is not found, NotFoundError is raised
         error_message = f"Collection '{db_name}' is missing. Please run './setup/create_or_update_database.sh' to create it."
         raise NotFoundError(error_message)
     
