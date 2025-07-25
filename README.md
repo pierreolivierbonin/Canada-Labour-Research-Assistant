@@ -216,7 +216,7 @@ See below for detailed instructions.
 - **Local PDFs**: Absolute file paths to local PDFs anywhere on your computer (supports folder paths to include all PDFs in a directory). Use OS-appropriate path formats (e.g., `C:/Documents/file.pdf` on Windows, `/home/user/Documents/file.pdf` on Linux/Mac)
 - **Web pages**: URLs to web content (supports blacklisting specific pages)
 
-> **Important**: Do not manually copy pdf files into the application folder. Simply specify the paths to files/folders that already exist on your computer. The database creation script will automatically import and process these files for you.
+> **Important**: You don't need to manually copy pdf files into the application folder. Simply specify the paths to files/folders that already exist on your computer. The database creation script will automatically import and process these files for you.
 
 ### Building Your Database
 
