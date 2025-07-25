@@ -4,7 +4,7 @@
     "save_html": true,            #<----- If True, the html files of all web pages will be saved in the "extracted_data" folder
     "languages": ["en"],    #<----- List of language codes that your database supports
     "ressource_name": {           #<----- Dictionary mapping language codes to display names for the UI
-        "en": "Another use case"
+        "en": "Example"
     },
 
     # PDF files: Add URLs or local file paths organized by language
