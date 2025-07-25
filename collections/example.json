@@ -1,8 +1,8 @@
 {
-    "name": "another_use_case",
+    "name": "example",
     "is_default": true, 
     "save_html": true, 
-    "languages": ["en", "fr"],
+    "languages": ["en"],
     "ressource_name": {
         "en": "Another use case"
     },
