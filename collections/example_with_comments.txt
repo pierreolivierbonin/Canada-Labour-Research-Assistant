@@ -1,8 +1,8 @@
 {
-    "name": "another_use_case",
+    "name": "example",
     "is_default": true,           #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
     "save_html": true,            #<----- If True, the html files of all web pages will be saved in the "extracted_data" folder
-    "languages": ["en", "fr"],    #<----- List of language codes that your database supports
+    "languages": ["en"],    #<----- List of language codes that your database supports
     "ressource_name": {           #<----- Dictionary mapping language codes to display names for the UI
         "en": "Another use case"
     },
