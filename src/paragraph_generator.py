@@ -10,6 +10,7 @@ from citation import verify_and_attribute_quotes, markdown_post_processing
 def post_processing(text: str, chunks: list, quotations_mode: bool, include_html_in_citations: bool = True) -> tuple[str, list]:
     # Clean any html from the answer
     formatted_text = BeautifulSoup(text, 'html.parser').get_text()
+    cited_chunk_ids = []
 
     if quotations_mode:
         formatted_text, cited_chunk_ids = verify_and_attribute_quotes(chunks, formatted_text, QuotationsConfig.threshold_rouge_score, include_html_in_citations, False, False)
