@@ -154,7 +154,13 @@ class App:
                 {self.translator.get('about.TOS')}
                 ''')
 
-            _load_vector_database(st.session_state.language, self.db_name)
+            _, has_warning = _load_vector_database(st.session_state.language, self.db_name)
+            if has_warning:
+                with st.expander(self.translator.get('language_fallback_warning_title'), 
+                                expanded=True,
+                                icon=":material/warning:"):
+                    st.markdown(f"{self.translator.get('language_fallback_warning')}")
+
             _retrieve_tokenizer()
 
         def create_tabs(nb_previous_questions, all_previous_messages):

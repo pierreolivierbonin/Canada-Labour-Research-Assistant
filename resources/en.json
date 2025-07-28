@@ -35,5 +35,7 @@
     },
     "processing": "Processing query...",
     "download": "Download Response",
-    "chat_input": "Please type your question here..."
+    "chat_input": "Please type your question here...",
+    "language_fallback_warning_title": "Language Configuration",
+    "language_fallback_warning": "The database was not configured for this language. The system has automatically fallen back to the first available language for this database, which may lead to unintended behavior."
 } 
