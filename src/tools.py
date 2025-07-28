@@ -49,7 +49,7 @@ def _load_vector_database(language,
                 fallback_collection_name = collection_name + "_" + db_name.lower() + ("_" + fallback_language if fallback_language != "en" else "")
                 collection = client.get_collection(fallback_collection_name, 
                                                    embedding_function=sentence_transformer_ef)
-                return collection
+                return collection, True
         except NotFoundError:
             pass
         
@@ -57,7 +57,7 @@ def _load_vector_database(language,
         error_message = f"Collection '{db_name}' is missing. Please run './setup/create_or_update_database.sh' to create it."
         raise NotFoundError(error_message)
     
-    return collection
+    return collection, False
 
 def fetch_documents_from_database(database_question, 
                                   language,
@@ -67,7 +67,7 @@ def fetch_documents_from_database(database_question,
     nb_docs_to_prioritize_multiplier = ChromaDBSettings.nb_docs_to_prioritize_multiplier if len(question_section_numbers) > 0 else 1
     nb_docs_to_fetch = n_results * nb_docs_to_prioritize_multiplier
 
-    results = _load_vector_database(language, db_name).query(query_texts=database_question,
+    results = _load_vector_database(language, db_name)[0].query(query_texts=database_question,
                                             n_results=nb_docs_to_fetch,
                                             include=["metadatas", "distances", "documents"])
 
@@ -78,7 +78,7 @@ def fetch_documents_from_database(database_question,
 
     # If there are question section numbers, also fetch documents that match the question section numbers (gives it low priority, just in case no documents related to them are found initially)
     if len(question_section_numbers) > 0:
-        results_sections = _load_vector_database(language, db_name).query(query_texts=database_question,
+        results_sections = _load_vector_database(language, db_name)[0].query(query_texts=database_question,
                                                 n_results=n_results,
                                                 include=["metadatas", "distances", "documents"],
                                                 where={"$or": [
