@@ -35,5 +35,7 @@
     },
     "processing": "Traitement de la requête...",
     "download": "Télécharger la réponse",
-    "chat_input": "Veuillez saisir votre question ici..."
+    "chat_input": "Veuillez saisir votre question ici...",
+    "language_fallback_warning_title": "Configuration linguistique",
+    "language_fallback_warning": "La base de données n'a pas été configurée pour cette langue. Le système a automatiquement basculé vers la première langue disponible pour cette base de données, ce qui peut entraîner un comportement non désiré."
 } 
