@@ -1,18 +1,18 @@
 {
-    "name": "another_use_case",
+    "name": "example",
     "is_default": true,           #<----- If True, this will be the default database in the app (if true for multiple databases, the first one will be the default)
     "save_html": true,            #<----- If True, the html files of all web pages will be saved in the "extracted_data" folder
-    "languages": ["en", "fr"],    #<----- List of language codes that your database supports
+    "languages": ["en"],    #<----- List of language codes that your database supports
     "ressource_name": {           #<----- Dictionary mapping language codes to display names for the UI
-        "en": "Another use case"
+        "en": "Example"
     },
 
     # PDF files: Add URLs or local file paths organized by language
     "pdf": {                      
         "en": [
             "https://www.example.com/pdf/example.pdf",      #<----- Remote server PDF URL
-            "C:/Users/<username>/<data_dir>/example.pdf",   #<----- Local PDF file path
-            "../<data_dir>/pdf_folder/"                     #<----- Local folder containing PDFs
+            "C:/Documents/file.pdf",   #<----- Local PDF file path (Could be anywhere on the computer)
+            "C:/Documents/pdf_folder"                     #<----- Local folder containing PDFs (Could be anywhere on the computer)
         ]
     },
 
