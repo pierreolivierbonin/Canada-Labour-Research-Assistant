@@ -8,9 +8,6 @@ if __name__ == "__main__":
     from unsloth import FastModel
     import torch
 
-    #import os
-    #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
     fourbit_models = [
         # 4bit dynamic quants for superior accuracy and low memory use
         "unsloth/gemma-3n-E4B-it-unsloth-bnb-4bit",
@@ -28,8 +25,8 @@ if __name__ == "__main__":
 
     model, tokenizer = FastModel.from_pretrained(
         model_name = "unsloth/gemma-3n-E4B-it",
-        dtype = torch.bfloat16, # None for auto detection
-        max_seq_length = 1024, # Choose any for long context!
+        dtype = None, # None for auto detection
+        max_seq_length = 3072, # Length of document messages can be up to 20k characters, nan if max seq length too small.
         load_in_4bit = True,  # 4 bit quantization to reduce memory
         full_finetuning = False, # [NEW!] We have full finetuning now!
         # token = "hf_...", # use one if using gated models
@@ -41,7 +38,7 @@ if __name__ == "__main__":
     """
 
     from transformers import TextStreamer
-    # Helper function for inference
+    # Helper function for inference (unused for now)
     def do_gemma_3n_inference(messages, max_new_tokens = 128):
         inputs = tokenizer.apply_chat_template(
             messages,
@@ -63,57 +60,6 @@ if __name__ == "__main__":
             streamer = TextStreamer(tokenizer, skip_prompt = True),
         )
 
-    """# Gemma 3N can see images!
-
-    <img src="https://files.worldwildlife.org/wwfcmsprod/images/Sloth_Sitting_iStock_3_12_2014/story_full_width/8l7pbjmj29_iStock_000011145477Large_mini__1_.jpg" alt="Alt text" height="256">
-    """
-
-    sloth_link = "https://files.worldwildlife.org/wwfcmsprod/images/Sloth_Sitting_iStock_3_12_2014/story_full_width/8l7pbjmj29_iStock_000011145477Large_mini__1_.jpg"
-
-    # messages = [{
-    #     "role" : "user",
-    #     "content": [
-    #         { "type": "image", "image" : sloth_link },
-    #         { "type": "text",  "text" : "Which films does this animal feature in?" }
-    #     ]
-    # }]
-    # # You might have to wait 1 minute for Unsloth's auto compiler
-    # do_gemma_3n_inference(messages, max_new_tokens = 256)
-
-    # """Let's make a poem about sloths!"""
-
-    messages = [{
-        "role": "user",
-        "content": [{ "type" : "text",
-                    "text" : "Write a poem about sloths." }]
-    }]
-    do_gemma_3n_inference(messages)
-
-    # """# Gemma 3N can also hear!"""
-
-    # audio_file = "audio.mp3"
-
-    # messages = [{
-    #     "role" : "user",
-    #     "content": [
-    #         { "type": "audio", "audio" : audio_file },
-    #         { "type": "text",  "text" : "What is this audio about?" }
-    #     ]
-    # }]
-    # do_gemma_3n_inference(messages, max_new_tokens = 256)
-
-    # """# Let's combine all 3 modalities together!"""
-
-    # messages = [{
-    #     "role" : "user",
-    #     "content": [
-    #         { "type": "audio", "audio" : audio_file },
-    #         { "type": "image", "image" : sloth_link },
-    #         { "type": "text",  "text" : "What is this audio and image about? "\
-    #                                     "How are they related?" }
-    #     ]
-    # }]
-    # do_gemma_3n_inference(messages, max_new_tokens = 256)
 
     """# Let's finetune Gemma 3N!
 
@@ -136,57 +82,82 @@ if __name__ == "__main__":
         random_state = 3407,
     )
 
-    """<a name="Data"></a>
-    ### Data Prep
-    We now use the `Gemma-3` format for conversation style finetunes. We use [Maxime Labonne's FineTome-100k](https://huggingface.co/datasets/mlabonne/FineTome-100k) dataset in ShareGPT style. Gemma-3 renders multi turn conversations like below:
 
-    ```
-    <bos><start_of_turn>user
-    Hello!<end_of_turn>
-    <start_of_turn>model
-    Hey there!<end_of_turn>
-    ```
+    import json
+    questions_answers = []
 
-    We use our `get_chat_template` function to get the correct chat template. We support `zephyr, chatml, mistral, llama, alpaca, vicuna, vicuna_old, phi3, llama3, phi4, qwen2.5, gemma3` and more.
-    """
+    # Read the file final_questions_answers.json as json
+    with open("experiments/create_qa_datasets/gemma3n_questions_answers.json", "r") as f:
+        questions_answers = json.load(f)
 
-    from unsloth.chat_templates import get_chat_template
+    conversations = []
+
+    longest_total_doc_length = 0
+
+    for x, qa_obj in enumerate(questions_answers):
+        current_conversation = []
+
+        document_messages = qa_obj["document_messages"]
+        document_ids = []
+        for message in document_messages:
+            current_conversation.append(message)
+
+            document_id = message["content"].split(":\n\n")[0]
+            document_ids.append(document_id)
+
+            # For each document messae, add an assistant message that says "Document X received"
+            current_conversation.append({
+                "role": "assistant",
+                "content": f"Document {document_id} received"
+            })
+
+        total_doc_length = sum(len(message["content"]) for message in document_messages)
+
+        if total_doc_length > longest_total_doc_length:
+            longest_total_doc_length = total_doc_length
+
+        if total_doc_length > 10000:
+            print(f"Document {document_ids} is too long for question {x}: {total_doc_length} characters")
+            continue
+
+        question = qa_obj["question"]
+
+        current_conversation.append({
+            "role": "user",
+            "content": question
+        })
+
+        answer = qa_obj["answer"]
+
+        current_conversation.append({
+            "role": "assistant",
+            "content": answer
+        })
+
+        conversations.append({"conversations": current_conversation})
+
+    print(f"Longest total document length: {longest_total_doc_length}")
+
+    from datasets import Dataset
+    conversations_dataset = Dataset.from_list(conversations)
+
+    from unsloth.chat_templates import CHAT_TEMPLATES, get_chat_template
+    print(list(CHAT_TEMPLATES.keys()))
+
+  # Supports zephyr, chatml, mistral, alpaca, vicuna, unsloth
     tokenizer = get_chat_template(
         tokenizer,
-        chat_template = "gemma-3",
+        chat_template = "gemma-3", #(modified_gemma3n_template, orig_chat_template[1]), # llama = llama 2 template.
+        #mapping = {"role" : "from", "content" : "value", "user" : "human", "assistant" : "gpt"}#, # ShareGPT style
+        map_eos_token = False, # Gemma3 chat templates sets it to False
     )
-
-    """We get the first 3000 rows of the dataset"""
-
-    from datasets import load_dataset
-    dataset = load_dataset("mlabonne/FineTome-100k", split = "train[:3000]")
-
-    """We now use `standardize_data_formats` to try converting datasets to the correct format for finetuning purposes!"""
-
-    from unsloth.chat_templates import standardize_data_formats
-    dataset = standardize_data_formats(dataset)
-
-    """Let's see how row 100 looks like!"""
-
-    print(dataset[100])
-
-    """We now have to apply the chat template for `Gemma-3` onto the conversations, and save it to `text`. We remove the `<bos>` token using removeprefix(`'<bos>'`) since we're finetuning. The Processor will add this token before training and the model expects only one."""
 
     def formatting_prompts_func(examples):
         convos = examples["conversations"]
-        texts = [tokenizer.apply_chat_template(convo, tokenize = False, add_generation_prompt = False).removeprefix('<bos>') for convo in convos]
+        texts = [tokenizer.apply_chat_template(convo, tokenize = False, add_generation_prompt = False) for convo in convos]
         return { "text" : texts, }
 
-    dataset = dataset.map(formatting_prompts_func, batched = True)
-
-    """Let's see how the chat template did! Notice there is no `<bos>` token as the processor tokenizer will be adding one."""
-
-    print(dataset[100]["text"])
-
-    """<a name="Train"></a>
-    ### Train the model
-    Now let's use Huggingface TRL's `SFTTrainer`! More docs here: [TRL SFT docs](https://huggingface.co/docs/trl/sft_trainer). We do 60 steps to speed things up, but you can set `num_train_epochs=1` for a full run, and turn off `max_steps=None`.
-    """
+    dataset = conversations_dataset.map(formatting_prompts_func, batched = True,)
 
     from trl import SFTTrainer, SFTConfig
     trainer = SFTTrainer(
@@ -198,9 +169,9 @@ if __name__ == "__main__":
             dataset_text_field = "text",
             per_device_train_batch_size = 1,
             gradient_accumulation_steps = 4, # Use GA to mimic batch size!
-            warmup_steps = 5,
-            # num_train_epochs = 1, # Set this for 1 full training run.
-            max_steps = 10,
+            warmup_steps = 10,
+            num_train_epochs = 2,
+            # max_steps = 10,
             learning_rate = 2e-4, # Reduce to 2e-5 for long training runs
             logging_steps = 1,
             optim = "adamw_8bit",
@@ -256,68 +227,6 @@ if __name__ == "__main__":
     print(f"Peak reserved memory % of max memory = {used_percentage} %.")
     print(f"Peak reserved memory for training % of max memory = {lora_percentage} %.")
 
-    # """<a name="Inference"></a>
-    # ### Inference
-    # Let's run the model via Unsloth native inference! According to the `Gemma-3` team, the recommended settings for inference are `temperature = 1.0, top_p = 0.95, top_k = 64`
-    # """
-
-    # from unsloth.chat_templates import get_chat_template
-    # tokenizer = get_chat_template(
-    #     tokenizer,
-    #     chat_template = "gemma-3",
-    # )
-    # messages = [{
-    #     "role": "user",
-    #     "content": [{
-    #         "type" : "text",
-    #         "text" : "Continue the sequence: 1, 1, 2, 3, 5, 8,",
-    #     }]
-    # }]
-    # inputs = tokenizer.apply_chat_template(
-    #     messages,
-    #     add_generation_prompt = True, # Must add for generation
-    #     return_tensors = "pt",
-    #     tokenize = True,
-    #     return_dict = True,
-    # ).to("cuda")
-    # outputs = model.generate(
-    #     **inputs,
-    #     max_new_tokens = 64, # Increase for longer outputs!
-    #     # Recommended Gemma-3 settings!
-    #     temperature = 1.0, top_p = 0.95, top_k = 64,
-    # )
-    # tokenizer.batch_decode(outputs)
-
-    # """ You can also use a `TextStreamer` for continuous inference - so you can see the generation token by token, instead of waiting the whole time!"""
-
-    # messages = [{
-    #     "role": "user",
-    #     "content": [{"type" : "text", "text" : "Why is the sky blue?",}]
-    # }]
-    # inputs = tokenizer.apply_chat_template(
-    #     messages,
-    #     add_generation_prompt = True, # Must add for generation
-    #     return_tensors = "pt",
-    #     tokenize = True,
-    #     return_dict = True,
-    # ).to("cuda")
-
-    # from transformers import TextStreamer
-    # _ = model.generate(
-    #     **inputs,
-    #     max_new_tokens = 64, # Increase for longer outputs!
-    #     # Recommended Gemma-3 settings!
-    #     temperature = 1.0, top_p = 0.95, top_k = 64,
-    #     streamer = TextStreamer(tokenizer, skip_prompt = True),
-    # )
-
-    # messages = [{
-    #     "role": "user",
-    #     "content": [{ "type" : "text",
-    #                 "text" : "Write a poem about sloths." }]
-    # }]
-    # do_gemma_3n_inference(messages)
-
     """<a name="Save"></a>
     ### Saving, loading finetuned models
     To save the final model as LoRA adapters, either use Huggingface's `push_to_hub` for an online save or `save_pretrained` for a local save.
@@ -333,8 +242,9 @@ if __name__ == "__main__":
     #model.save_pretrained_merged("gemma-3n-finetune", tokenizer, save_method = "merged_16bit",) 
     pretrain_model_name = "gemma3n-finetune"
     
-    quantization_type = "F16"
-    model.save_pretrained_merged(pretrain_model_name, tokenizer) # Merge the model in 16 bit (necessary to save to GGUF afterwards)
+    save_method = "merged_16bit" # Recommended to merge in 16 bit before quantization to avoid accuracy loss
+    quantization_type = "Q8_0" # 4 bit not supported for gguf conversion
+    model.save_pretrained_merged(pretrain_model_name, tokenizer, save_method = save_method) # Merge the model in 16 bit (necessary to save to GGUF afterwards)
     model.save_pretrained_gguf(pretrain_model_name, quantization_type = quantization_type) # Save the model in GGUF format (needed for ollama)
 
     # Move model.{quantization_type}.gguf to model/model.{quantization_type}.gguf
@@ -359,44 +269,6 @@ if __name__ == "__main__":
             file.write(modelfile)
         pass
         print(f"Unsloth: Saved Ollama Modelfile to {modelfile_location}")
-
-    #model.save_pretrained_merged("gemma-3N-finetune", tokenizer)
-    # Save for ollama
-    # model.save_pretrained_gguf(
-    #     "gemma-3n-finetune",
-    #     quantization_type = "F16", # For now only Q8_0, BF16, F16 supported
-    # )
-
-    # """Now if you want to load the LoRA adapters we just saved for inference, set `False` to `True`:"""
-
-    # if False:
-    #     from unsloth import FastModel
-    #     model, tokenizer = FastModel.from_pretrained(
-    #         model_name = "lora_model", # YOUR MODEL YOU USED FOR TRAINING
-    #         max_seq_length = 2048,
-    #         load_in_4bit = True,
-    #     )
-
-    # messages = [{
-    #     "role": "user",
-    #     "content": [{"type" : "text", "text" : "What is Gemma-3N?",}]
-    # }]
-    # inputs = tokenizer.apply_chat_template(
-    #     messages,
-    #     add_generation_prompt = True, # Must add for generation
-    #     return_tensors = "pt",
-    #     tokenize = True,
-    #     return_dict = True,
-    # ).to("cuda")
-
-    # from transformers import TextStreamer
-    # _ = model.generate(
-    #     **inputs,
-    #     max_new_tokens = 128, # Increase for longer outputs!
-    #     # Recommended Gemma-3 settings!
-    #     temperature = 1.0, top_p = 0.95, top_k = 64,
-    #     streamer = TextStreamer(tokenizer, skip_prompt = True),
-    # )
 
     """### Saving to float16 for VLLM
 

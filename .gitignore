@@ -21,6 +21,7 @@ Llama-3.2*
 vllm/
 static/
 src/CLaRA*
+/.secrets
 
 # Ignore all files in collections folder except specific ones
 collections/*

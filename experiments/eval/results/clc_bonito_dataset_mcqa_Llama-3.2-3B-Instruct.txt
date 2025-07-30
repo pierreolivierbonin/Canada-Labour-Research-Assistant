@@ -1,0 +1,28 @@
+============================================================
+CLC BONITO DATASET MCQA EVALUATION RESULTS
+============================================================
+Evaluation Date: 2025-05-30 12:04:49
+Model: unsloth/Llama-3.2-3B-Instruct
+Dataset: clc_bonito_dataset_mcqa/data.jsonl
+Reference: clc_data.csv
+------------------------------------------------------------
+
+SUMMARY METRICS:
+Total items processed: 1630
+Items without section matches: 14
+Exact matches: 724
+Partial matches: 781
+
+ACCURACY SCORES:
+Exact match accuracy: 44.42%
+Partial match accuracy: 47.91%
+Average exact score: 0.4442
+Average partial score: 0.4791
+
+DETAILED BREAKDOWN:
+Success rate (items with section matches): 99.14%
+Coverage (items successfully processed): 100.00%
+
+============================================================
+FINAL SCORE: 44.42% (Exact Match Accuracy)
+============================================================

@@ -292,6 +292,31 @@ def retrieve_database_local(database_question,
 
     return formatted_llm_answer, metadata_tab, documents_tab, chunks, original_answer, cited_chunk_ids
 
+@st.cache_data(show_spinner=False, ttl=600)
+def retrieve_database_local_chunks_only(database_question,
+                      language,
+                      db_name,
+                      is_remote=False,
+                      chat_model=None,
+                      n_results=ChromaDBSettings.nb_docs_returned,
+                      hyperparams=OllamaRAGConfig.HyperparametersAccuracyConfig,
+                      quotations_mode=QuotationsConfig.direct_quotations_mode,
+                      custom_system_prompt=None,
+                      previous_messages=None,
+                      nb_previous_questions=1,
+                      engine="ollama",
+                      hardcode_question_section_numbers=None,
+                      include_html_in_citations=True):
+    
+    previous_question_chunks = get_previous_question_chunks(previous_messages, nb_previous_questions)
+    
+    messages, chunks, metadata_tab, documents_tab, chat_model, hyperparams, total_used_tokens = retrieve_database(
+        database_question, language, db_name, is_remote, chat_model, n_results, hyperparams, quotations_mode, 
+        custom_system_prompt, previous_messages, previous_question_chunks, nb_previous_questions
+    )
+
+    return metadata_tab, documents_tab, chunks
+
 def retrieve_database_stream(database_question,
                       language,
                       db_name,

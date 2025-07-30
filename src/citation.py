@@ -362,7 +362,7 @@ def check_words_in_quote_under_threshold(quote):
     return len([word for word in quote.split()]) < QuotationsConfig.min_words_in_quote
 
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
-def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False) -> tuple[str, list]:
+def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False) -> tuple[str, list, list]:
     # Extract regular quotes sections
     quotes = re.findall(r'"([^"]*)"', llm_answer)
     
@@ -378,6 +378,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
     modified_answer = llm_answer
 
     cited_chunk_ids = set()
+    citation_scores = []  # Track scores for each citation attempt
     
     # Process each quote
     for quote in quotes:
@@ -413,6 +414,15 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
                 best_chunk_title = chunk_title
                 best_chunk_url = chunk_url
 
+        # Store citation information including score
+        citation_info = {
+            'quote': quote,
+            'best_score': best_score,
+            'found_match': best_score > threshold and best_match_info is not None,
+            'chunk_id': best_chunk_id if best_score > threshold and best_match_info else None
+        }
+        citation_scores.append(citation_info)
+
         # Only use the match if score is > threshold
         if best_score > threshold and best_match_info:
             matched_segment, start, end = best_match_info
@@ -435,7 +445,7 @@ def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=Fals
         pattern = rf'-*\**\n?\s*(?:\*?\s*"{re.escape(quote)}"|\*\s*{re.escape(quote)})(\s*\([^)]*\([A-Za-z0-9 ]+\)[^)]*\)|\s*\([^)]*\))?\.?;?\**'
         modified_answer = re.sub(pattern, f'\n{replacement_text}{" " + attribution if attribution is not None else ""}', modified_answer)
         
-    return modified_answer, list(cited_chunk_ids)
+    return modified_answer, list(cited_chunk_ids), citation_scores
 
 if __name__ == "__main__":
 
@@ -451,7 +461,8 @@ if __name__ == "__main__":
     """
 
     start_time = time.time()
-    result, _ = verify_and_attribute_quotes(chunks, llm_answer, QuotationsConfig.threshold_rouge_score, True, False, False)
+    result, _, citation_scores = verify_and_attribute_quotes(chunks, llm_answer, QuotationsConfig.threshold_rouge_score, True, False, False)
     print(result)
+    print(f"Citation scores: {citation_scores}")
     end_time = time.time()
     print(f"Time taken: {end_time - start_time} seconds")

@@ -2,7 +2,7 @@ import json
 import pandas as pd
 import torch
 from unsloth import FastLanguageModel
-from transformers import TextStreamer
+from transformers.generation.streamers import TextStreamer
 import re
 from tqdm import tqdm
 from datetime import datetime
@@ -15,14 +15,14 @@ dataset_path = "experiments/eval/clc_bonito_dataset_mcqa/data.jsonl"
 dataset_name = dataset_path.split("/")[0]
 clc_data_path = "experiments/create_qa_datasets/clc_dataset/clc_data.csv"
 
-# Load the LoRA model for inference
 def load_model():
+    """Load the LoRA model for inference"""
     max_seq_length = None
     dtype = None
     load_in_4bit = False
 
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name= model_name,  # Using the mcqa model
+        model_name= model_name,  # Using the MCQA model
         max_seq_length=max_seq_length,
         dtype=dtype,
         load_in_4bit=load_in_4bit,
@@ -30,8 +30,8 @@ def load_model():
     FastLanguageModel.for_inference(model)
     return model, tokenizer
 
-# Load JSONL data from file
 def load_jsonl_data(file_path):
+    """Load JSONL data from file"""
     data = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -39,12 +39,12 @@ def load_jsonl_data(file_path):
                 data.append(json.loads(line.strip()))
     return data
 
-# Load CSV data
 def load_csv_data(file_path):
+    """Load CSV data"""
     return pd.read_csv(file_path)
 
-# Find the section_number for the given context in the CSV data
 def find_matching_section(context, csv_data):
+    """Find the section_number for the given context in the CSV data"""
     # Look for exact match first
     exact_match = csv_data[csv_data['text'] == context]
     if not exact_match.empty:
@@ -64,8 +64,12 @@ def find_matching_section(context, csv_data):
     
     return None
 
-# Replace {{context}} placeholder with section number reference
+def replace_context(instruction, context):
+    """Replace {{context}} with the correct context"""
+    return instruction.replace("{{context}}", context)
+    
 def replace_context_placeholder(instruction, section_number):
+    """Replace {{context}} placeholder with section number reference"""
     if section_number is not None:
         section_ref = f"Related to section {section_number} of the Canada Labour Code (CLC)"
         return instruction.replace("{{context}}", section_ref)
@@ -73,8 +77,8 @@ def replace_context_placeholder(instruction, section_number):
         # If no section found, remove the placeholder
         return instruction.replace("{{context}}", "")
 
-# Query the model with the given instruction
 def query_model(model, tokenizer, instruction):
+    """Query the model with the given instruction"""
     messages = [
         {"role": "system", "content": "You are a helpful assistant that answers questions about the Canada Labour Code (CLC). You should directly answer the question based on the context provided, without any additional explanation or commentary. Ex: User: Having read the above passage, choose the right answer to the following question (choices are 2012 or 2014). Answer: 2014"},
         {"role": "user", "content": instruction}
@@ -100,8 +104,8 @@ def query_model(model, tokenizer, instruction):
     response = tokenizer.decode(outputs[0][input_ids.shape[1]:], skip_special_tokens=True)
     return response.strip()
 
-# Clean predicted and expected strings
 def clean_predicted_expected(predicted, expected):
+    """Clean predicted and expected strings"""
     clean_predicted = predicted.strip("- ").lower()
     clean_expected = expected.strip("- ").lower()
 
@@ -113,13 +117,13 @@ def clean_predicted_expected(predicted, expected):
 
     return clean_predicted, clean_expected, is_1_char_expected
 
-# Calculate exact match score
 def calculate_exact_match_score(predicted, expected):
     cleaned_predicted, cleaned_expected, is_1_char_expected = clean_predicted_expected(predicted, expected)
+    """Calculate exact match score"""
     return 1 if cleaned_predicted == cleaned_expected else 0, is_1_char_expected
 
-# Calculate partial match score (if predicted answer is contained in expected or vice versa)
 def calculate_partial_match_score(predicted, expected):
+    """Calculate partial match score (if predicted answer is contained in expected or vice versa)"""
     cleaned_predicted, cleaned_expected, _ = clean_predicted_expected(predicted, expected)
     
     # if pred_lower == exp_lower:
@@ -129,9 +133,10 @@ def calculate_partial_match_score(predicted, expected):
     else:
         return 0.0
 
-# Save evaluation results to a text file
-def save_results_to_file(results_dict):
-    filepath = "experiments/eval/results/" + dataset_name + "_" + model_name_no_path + ".txt" 
+def save_results_to_file(results_dict, include_context):
+    filepath = "experiments/eval/results/" + dataset_name + "_" + model_name_no_path + ("_with_context" if include_context else "") + ".txt"
+
+    """Save evaluation results to a text file"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     with open(filepath, 'w', encoding='utf-8') as f:
@@ -167,6 +172,8 @@ def save_results_to_file(results_dict):
     return filepath
 
 def main():
+    include_context = True
+
     print("Loading model...")
     model, tokenizer = load_model()
     
@@ -210,7 +217,10 @@ def main():
                 print(f"Warning: No section match found for item {i}")
             
             # Replace context placeholder with section reference
-            processed_instruction = replace_context_placeholder(instruction, section_number)
+            if include_context:
+                processed_instruction = replace_context(instruction, context)
+            else:
+                processed_instruction = replace_context_placeholder(instruction, section_number)
             
             # Query the model
             predicted_output = query_model(model, tokenizer, processed_instruction)
@@ -280,7 +290,7 @@ def main():
         
         # Save results to file
         print(f"\nSaving results to eval...")
-        eval_filepath = save_results_to_file(results)
+        eval_filepath = save_results_to_file(results, include_context)
         print("Results saved successfully!")
 
         # PRint the results from the file
@@ -302,7 +312,7 @@ def main():
             'success_rate': 0.0,
             'coverage': 0.0
         }
-        save_results_to_file(error_results)
+        save_results_to_file(error_results, include_context)
 
 if __name__ == "__main__":
     main() 

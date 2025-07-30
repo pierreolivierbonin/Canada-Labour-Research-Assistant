@@ -13,7 +13,7 @@ def post_processing(text: str, chunks: list, quotations_mode: bool, include_html
     cited_chunk_ids = []
 
     if quotations_mode:
-        formatted_text, cited_chunk_ids = verify_and_attribute_quotes(chunks, formatted_text, QuotationsConfig.threshold_rouge_score, include_html_in_citations, False, False)
+        formatted_text, cited_chunk_ids, _ = verify_and_attribute_quotes(chunks, formatted_text, QuotationsConfig.threshold_rouge_score, include_html_in_citations, False, False)
 
     return formatted_text, cited_chunk_ids
 

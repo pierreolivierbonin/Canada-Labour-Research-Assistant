@@ -42,7 +42,7 @@ class ChatbotInterfaceConfig(BaseChatbotInterfaceConfig):
     default_mode = "local"
     title = "Canada Labour Research Assistant"
     default_model_local = "gemma3n:latest"
-    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b', "gemma3n:latest",
+    models_shortlist_local = ['gemma3:1b', 'gemma3:4b', 'gemma3:12b', "gemma3n:latest", "gemma3n:e4b-it-q8_0", "gemma3n-finetune", "gemma3n-finetune-2-epochs",
                         'granite3-dense:8b',
                         'llama3.2:latest', "llama3.2-3B-instruct-q4-k-l:latest", "llama3.2-3B-instruct-q4-k-m:latest",
                         'mistral-small:24b-instruct-2501-q4_K_M', 'mistral-small3.1', 'mistral-nemo']
@@ -128,7 +128,10 @@ class RAGConfig:
         "meta-llama/Llama-3.2-3B-Instruct": 131072,
         "google/gemma-2-9b": 131072,
         "gemma3n:latest": 32768,
+        "gemma3n-finetune": 32768,
+        "gemma3n-finetune-2-epochs": 32768,
         "gemma3n:e4b":32768,
+        "gemma3n:e4b-it-q8_0":32768,
         "gemma3:1b": 32768,
         "gemma3:4b": 131072,
         "gemma3:12b": 131072,
