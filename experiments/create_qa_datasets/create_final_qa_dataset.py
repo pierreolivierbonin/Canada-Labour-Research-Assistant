@@ -66,7 +66,7 @@ if __name__ == "__main__":
     models = [
         "gemma3n:latest",
         "gemma3n-finetune", 
-        "gemma3n-finetune-2-epochs_questions_answers",
+        "gemma3n-finetune-2-epochs",
         "gemma3n:e4b-it-q8_0"
     ]
     

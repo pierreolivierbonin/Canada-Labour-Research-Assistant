@@ -169,30 +169,34 @@ def evaluate_hallucination_rate(questions_source_file, answers_file, output_pref
 
 def main():
     # File paths
-    questions_source_file = "experiments/create_qa_datasets/questions_source_documents.json"
-    output_prefix = "gemma3n-finetune-2-epochs_questions_answers_q8"
-    answers_file = f"experiments/create_qa_datasets/{output_prefix}.json"
+    questions_source_file = "experiments/create_qa_datasets/new_questions_source_documents.json"
     
-    # Check if files exist
+    # List of output prefixes to evaluate
+    output_prefixes = [
+        "new_gemma3n_latest",
+        "new_gemma3n-finetune",
+        "new_gemma3n-finetune-2-epochs",
+        "new_gemma3n_e4b-it-q8_0"
+    ]
+    
+    # Check if source file exists
     if not os.path.exists(questions_source_file):
         print(f"Error: Source file not found: {questions_source_file}")
-        return
-    
-    if not os.path.exists(answers_file):
-        print(f"Error: Answers file not found: {answers_file}")
         return
     
     # Create output directory if it doesn't exist
     os.makedirs("experiments/eval", exist_ok=True)
     
-    # Run evaluation
-    try:
-        summary = evaluate_hallucination_rate(questions_source_file, answers_file, output_prefix)
-        print("\nHallucination evaluation completed successfully!")
-        return summary
-    except Exception as e:
-        print(f"Error during evaluation: {str(e)}")
-        raise
+    # Loop through each output prefix and run evaluation
+    for output_prefix in output_prefixes:
+        print(f"Processing with output prefix: {output_prefix}")
+        
+        answers_file = f"experiments/create_qa_datasets/clara_questions_answers_datasets/{output_prefix}.json"
+        
+        _ = evaluate_hallucination_rate(questions_source_file, answers_file, output_prefix)
+        print(f"\nHallucination evaluation completed successfully for {output_prefix}!")
+
+    print("All evaluations completed!")
 
 if __name__ == "__main__":
     main()
