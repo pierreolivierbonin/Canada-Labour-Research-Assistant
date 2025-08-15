@@ -7,7 +7,11 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.errors import NotFoundError
 import streamlit as st
+from transformers import AutoTokenizer, AutoModel
+import torch.nn.functional as F
+from torch import Tensor
 import torch
+
 
 from db_config import VectorDBDataFiles
 from config import ChatbotInterfaceConfig, ChromaDBSettings, CustomEmbeddingFunction, PromptTemplateType, RAGConfig, OllamaRAGConfig, QuotationsConfig, ConsoleConfig
@@ -19,6 +23,11 @@ from paragraph_generator import markdown_post_processing, post_processing, get_p
 from context import manage_max_context_length, extract_reference_section_numbers, format_context_for_prompt, format_for_documents_tab_ui, format_for_metadata_tab_ui, reprioritize_docs
 
 torch.classes.__path__ = [] # this speeds up launch time by fixing an unresolved issue with Streamlit, as per https://discuss.streamlit.io/t/message-error-about-torch/90886/5
+
+def average_pool(last_hidden_states: Tensor,
+                 attention_mask: Tensor) -> Tensor:
+    last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
+    return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
 @st.cache_resource(show_spinner="Loading Database...")
 def _load_vector_database(language, 
@@ -67,9 +76,23 @@ def fetch_documents_from_database(database_question,
     nb_docs_to_prioritize_multiplier = ChromaDBSettings.nb_docs_to_prioritize_multiplier if len(question_section_numbers) > 0 else 1
     nb_docs_to_fetch = n_results * nb_docs_to_prioritize_multiplier
 
-    results = _load_vector_database(language, db_name)[0].query(query_texts=database_question,
-                                            n_results=nb_docs_to_fetch,
-                                            include=["metadatas", "distances", "documents"])
+    if language=="fr":
+        tokenizer = AutoTokenizer.from_pretrained('intfloat/multilingual-e5-large-instruct')
+        model = AutoModel.from_pretrained('intfloat/multilingual-e5-large-instruct')
+        batch_dict = tokenizer(database_question, max_length=512, padding=True, truncation=True, return_tensors='pt')
+        outputs = model(**batch_dict)
+        embeddings = average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
+        embeddings = F.normalize(embeddings, p=2, dim=1)
+        embeddings = embeddings.detach().numpy()
+
+        results = _load_vector_database(language, db_name)[0].query(query_embeddings=embeddings,
+                                n_results=nb_docs_to_fetch,
+                                include=["metadatas", "distances", "documents"])
+
+    else:
+        results = _load_vector_database(language, db_name)[0].query(query_texts=database_question,
+                                        n_results=nb_docs_to_fetch,
+                                        include=["metadatas", "distances", "documents"])
 
     documents = results["documents"][0]
     metadata = results["metadatas"][0]
@@ -337,7 +360,7 @@ def retrieve_database_stream(database_question,
     
 
 if __name__ == "__main__":
-    from config import vLLMRAGConfig, vLLMChatbotInterfaceConfig
+    from config import vLLMRAGConfig, vLLMChatbotInterfaceConfig, ChatbotInterfaceConfig, OllamaRAGConfig
 
     # start_time = time.time()
     # answer, _, _, _, original_answer = retrieve_database_local(
@@ -356,10 +379,17 @@ if __name__ == "__main__":
     # #print(answer)
     # print(original_answer)
 
-    hyperparams = vLLMRAGConfig.HyperparametersAccuracyConfig.copy()
-    chat_model = vLLMChatbotInterfaceConfig.default_model_local
+    hyperparams = OllamaRAGConfig.HyperparametersAccuracyConfig.copy()
+    chat_model = ChatbotInterfaceConfig.default_model_local
     
-    answer, _, _, chunks = retrieve_database_stream("what is section 204 of the CLC about?", "en", "labour", chat_model=chat_model, hyperparams=hyperparams, engine="vllm", n_results=5, is_remote=False)
+    answer, _, _, chunks = retrieve_database_stream(database_question="qu'est-ce qu'un congédiement implicite?", 
+                                                    language="fr", 
+                                                    db_name="labour", 
+                                                    chat_model=chat_model, 
+                                                    hyperparams=hyperparams, 
+                                                    engine="ollama", 
+                                                    n_results=5, 
+                                                    is_remote=False)
     previous_paragraphs = ""
     original_previous_paragraphs = ""
     for previous_paragraphs, original_previous_paragraphs, stream_generator in answer:
