@@ -8,6 +8,7 @@ import chromadb
 from chromadb.config import Settings
 from scipy import stats
 from sentence_transformers import CrossEncoder
+from tqdm import tqdm
 
 from db_config import EmbeddingModel, ModelsConfig
 
@@ -37,12 +38,15 @@ class RAGcorporaConsistencyEvaluator:
         To evaluate self-consistency, initialize with the default target_* parameters. This will take a document chunk 
         from the `reference_collection` and use it as a query with respect to its own corpus.
 
-        To evaluate comparative consistency, initialize with the required arguments alongside target_* arguments. This will take a document chunk
+        To evaluate comparative consistency, initialize with the required arguments alongside your own target_* arguments. This will take a document chunk
         from the `reference_collection` and use it as a query with respect to the `target_collection`.
 
-        @top_n: number of matches retrieved, in order from most to least to most distant (or least to most similar).
+        @top_n: number of matches retrieved, in order from most to least distant (or least to most similar).
         @random_sample: if True, will not loop over the entire collection; will use a random sample specified in random_n instead
         @random_n: the size of the random sample
+        @ef_construction: determines the size of the candidate list used to select neighbors during index creation. A higher value improves index quality 
+                          at the cost of more memory and time, while a lower value speeds up construction with reduced accuracy. 
+                          The default value is 100. [P-O: has no impact if DB already created]
         '''
         
         self.embedding_model_fn = embedding_model_fn
@@ -79,8 +83,8 @@ class RAGcorporaConsistencyEvaluator:
             print("\nListing all collections for target client...\n" + str(self.target_client.list_collections())+"\n")
 
         if self.target_client_path:
-            self.target_collection = self.target_client.get_collection(self.target_collection_name, 
-                                                        embedding_function=self.embedding_model_fn)
+            self.target_collection = self.target_client.get_or_create_collection(self.target_collection_name, 
+                                                                                 embedding_function=self.embedding_model_fn)
             self.target_all_docs = self.target_collection.get()["documents"]
             self.target_embeddings = self.target_collection.get()["embeddings"]
             self.target_ids = self.target_collection.get()["ids"]
@@ -101,7 +105,7 @@ class RAGcorporaConsistencyEvaluator:
         self.results_compiled = []
         self.reference_cosine_dists = []
         
-        for ix, i in enumerate(self.reference_all_docs): # switch rand_sample to all_docs when running full experiment
+        for ix, i in tqdm(enumerate(self.reference_all_docs)): # switch rand_sample to all_docs when running full experiment
 
             # search the vectorDB with one of its own chunks
             results = self.reference_collection.query(query_texts=i, 
@@ -149,7 +153,7 @@ class RAGcorporaConsistencyEvaluator:
         self.results_compiled = []
         self.target_cosine_dists = []
 
-        for i,j in zip(self.reference_all_docs, self.reference_all_metadata):
+        for i,j in zip(tqdm(self.reference_all_docs), self.reference_all_metadata):
 
             results = self.target_collection.query(query_texts=i, 
                                             n_results=self.top_n, 
@@ -180,9 +184,11 @@ if __name__ == "__main__":
     '''
     Related paper: https://arxiv.org/pdf/2403.05440v1. 
     The output produced  notably confirms the cosine distance is equal to zero (0) when the chunk is matched with itself (first distance returned). 
+    ChromaDB's similarity metrics include: Euclidean distance, inner product, and cosine DISTANCE (misleadingly identified as cosine similarity 
+    in the official doc at: https://docs.trychroma.com/docs/collections/configure) 
     
-    Step 1: make sure the document chunks are embedded using 'all-mpnet-base-v2' (a.k.a. 'mpnet' in db_config). Use the script
-            create_database_with_specific_embeddings.py to do so.
+    Step 1: make sure the document chunks are embedded using 'all-mpnet-base-v2' (a.k.a. 'mpnet' in db_config) with the `get_or_create_collection()` method.
+            For example: `selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)`
     Step 2: 
     '''
 
@@ -208,10 +214,10 @@ if __name__ == "__main__":
                                              similarity_fn_name="cosine",   # should be consistent with the function used at creation time
                                              ef_construction=1000,
                                              top_n=10,
-                                             random_sample=False,            # set this to False to run on entire collection (ref. or target) 
-                                            #  random_n=5,                    # this will have no effect if random_sample=Falses
+                                             random_sample=True,            # set this to False to run on entire collection (ref. or target) 
+                                             random_n=5,                    # this will have no effect if random_sample=False
                                              seed=1837,
-                                             verbose=True
+                                             verbose=False
                                              )
     
     # Step 2 - Get cosine distances
@@ -221,9 +227,9 @@ if __name__ == "__main__":
     # Step 3 - Refine by getting cross-encoder scores
     cross_encoder_scores = []
     for i in range(len(results_self_consistency)):
-        # print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
+        print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
         for j in range(len(results_self_consistency[0]["target"]["documents"][0])):
-            # print(f"\nPreviewing target document chunk...\n{results_self_consistency[0]["target"]["documents"][0][j]}")
+            print(f"\nPreviewing target document chunk...\n{results_self_consistency[0]["target"]["documents"][0][j]}")
             cross_encoder_scores.append(cross_encoder.predict((results_self_consistency[i]["reference"][1], 
                                                               results_self_consistency[0]["target"]["documents"][0][j]))
                                                               )
