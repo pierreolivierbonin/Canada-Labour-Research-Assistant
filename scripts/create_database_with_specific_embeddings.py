@@ -27,10 +27,6 @@ def main(collection_name:str,
 
     # check if collection already exists
     try:
-        collection = client.get_collection(collection_name)
-        if collection:
-            print(f"\nCollection found: {collection_name}")
-            print("Deleting collection to recreate a new one...")
         client.delete_collection(collection_name)
     except Exception:
         print("Collection did not already exist. Creating one...")        
