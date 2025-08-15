@@ -293,7 +293,7 @@ if __name__ == "__main__":
             print(f"Creating collection: {collection_name}")
             start_time = time()
 
-            if "_fr" in collection_name:
+            if language == 'fr':
                 # previous embedding model proved insufficient 
                 selected_model_fr = EmbeddingModel(model_name=ModelsConfig.models["multilg-e5"], trust_remote_code=True)
                 selected_model_fr.assign_model_and_attributes()
