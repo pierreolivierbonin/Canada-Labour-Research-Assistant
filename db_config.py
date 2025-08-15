@@ -84,14 +84,14 @@ class CustomEmbeddingFunction(EmbeddingFunction):
     def __call__(self, input_):
         try:
             if self.model_name:
-                embeddings =SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code).encode(input_)
+                embeddings = SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code).encode(input_)
                 return embeddings
             else:
-                embeddings =SentenceTransformer(self.model_card_data.base_model, trust_remote_code=self.trust_remote_code).encode(input_)
+                embeddings = SentenceTransformer(self.model_card_data.base_model, trust_remote_code=self.trust_remote_code).encode(input_)
                 return embeddings
-        
         except Exception as e:
-            print(e)
+            print(f"Error generating embeddings: {e}")
+            raise e
 
 
 
