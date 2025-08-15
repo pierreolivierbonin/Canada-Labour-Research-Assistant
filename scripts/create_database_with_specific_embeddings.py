@@ -294,7 +294,7 @@ if __name__ == "__main__":
             start_time = time()
 
             if language == 'fr':
-                # previous embedding model proved insufficient 
+                # Using multilg-e5 model for French content as it shows better performance on non-English texts compared to multi_qa
                 selected_model_fr = EmbeddingModel(model_name=ModelsConfig.models["multilg-e5"], trust_remote_code=True)
                 selected_model_fr.assign_model_and_attributes()
 
