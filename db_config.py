@@ -26,7 +26,8 @@ the highest on the MTEB, using the following filters:
 class ModelsConfig:
     models={"multi_qa":"multi-qa-mpnet-base-dot-v1",
             "mpnet":"all-mpnet-base-v2", 
-            "biling_lg":"Lajavaness/bilingual-embedding-large"}
+            "para_multiling": "paraphrase-multilingual-mpnet-base-v2",
+            "multilg-e5": "intfloat/multilingual-e5-large-instruct"}
     
     models_untested={"inf_retriever":"infly/inf-retriever-v1-1.5b", 
                      "qwen2_small":"Alibaba-NLP/gte-Qwen2-1.5B-instruct",
@@ -81,8 +82,18 @@ class CustomEmbeddingFunction(EmbeddingFunction):
         self.trust_remote_code = trust_remote_code
     
     def __call__(self, input_):
-        embeddings =SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code).encode(input_)
-        return embeddings
+        try:
+            if self.model_name:
+                embeddings =SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code).encode(input_)
+                return embeddings
+            else:
+                embeddings =SentenceTransformer(self.model_card_data.base_model, trust_remote_code=self.trust_remote_code).encode(input_)
+                return embeddings
+        
+        except Exception as e:
+            print(e)
+
+
 
 
 class EmbeddingModel:
@@ -92,11 +103,17 @@ class EmbeddingModel:
         self.trust_remote_code = trust_remote_code
 
     def assign_model_and_attributes(self):
-        self.model=SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code)
-        self.model_chroma_callable=CustomEmbeddingFunction(model_name=self.model_name, trust_remote_code=self.trust_remote_code)
-        self.max_seq_length=self.model.max_seq_length         
-        self.used_seq_length=self.model.max_seq_length
-        self.dimensions=self.model.get_sentence_embedding_dimension()
+        try:
+            self.model=SentenceTransformer(self.model_name, trust_remote_code=self.trust_remote_code)
+            if self.model_name:
+                self.model_chroma_callable=CustomEmbeddingFunction(model_name=self.model_name, trust_remote_code=self.trust_remote_code)
+            else:
+                self.model_chroma_callable=CustomEmbeddingFunction(model_name=self.model_card_data.base_model, trust_remote_code=self.trust_remote_code)
+            self.max_seq_length=self.model.max_seq_length         
+            self.used_seq_length=self.model.max_seq_length
+            self.dimensions=self.model.get_sentence_embedding_dimension()
+        except Exception as e:
+            print(f"\nSomething went wrong: {e}")
 
 
 if __name__ == "__main__":
@@ -104,6 +121,9 @@ if __name__ == "__main__":
     for k, v in ModelsConfig.models.items():
         model = EmbeddingModel(model_name=ModelsConfig.models[k], trust_remote_code=True)
         model.assign_model_and_attributes()
-        print(f"\nModel name: {model.model_name}")
-        print(f"Model max sequence length: {model.max_seq_length}")
-        print(f"Model embedding dimensions: {model.dimensions}")
+        try:
+            print(f"\nModel name: {model.model_name}")
+            print(f"Model max sequence length: {model.max_seq_length}")
+            print(f"Model embedding dimensions: {model.dimensions}")
+        except Exception as e:
+            print(e)

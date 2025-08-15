@@ -1,14 +1,14 @@
 import csv
-from dataclasses import fields
 import os
+import re
+import sys
+from time import time
 
 import chromadb
+from sentence_transformers import SentenceTransformer
 import pandas as pd
-from time import time
-import re
 
-import sys
-import os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Add the parent directory to sys.path
 from config import ChromaDBSettings
 from db_config import EmbeddingModel, VectorDBDataFiles
@@ -25,11 +25,25 @@ def main(collection_name:str,
     # create client
     client = chromadb.PersistentClient(path=db_path)
 
-    # set a custom max_seq_length
-    model.max_seq_length = model.used_seq_length 
+    # check if collection already exists
+    try:
+        collection = client.get_collection(collection_name)
+        if collection:
+            print(f"\nCollection found: {collection_name}")
+            print("Deleting collection to recreate a new one...")
+        client.delete_collection(collection_name)
+    except Exception:
+        print("Collection did not already exist. Creating one...")        
 
     # fetch or create collection
-    collection = client.get_or_create_collection(name=collection_name,
+    if "_fr" in collection_name:
+        collection = client.create_collection(name=collection_name,
+                                                    embedding_function=model.model_chroma_callable,
+                                                    metadata={
+                                                    "hnsw:space":distance_func,
+                                                })
+    else:    
+        collection = client.create_collection(name=collection_name,
                                                     embedding_function=model.model_chroma_callable,
                                                     metadata={
                                                     "hnsw:space":distance_func,
@@ -279,7 +293,21 @@ if __name__ == "__main__":
             print(f"Creating collection: {collection_name}")
             start_time = time()
 
-            main(collection_name=collection_name,
+            if "_fr" in collection_name:
+                # previous embedding model proved insufficient 
+                selected_model_fr = EmbeddingModel(model_name=ModelsConfig.models["multilg-e5"], trust_remote_code=True)
+                selected_model_fr.assign_model_and_attributes()
+
+                main(collection_name=collection_name,
+                db_path=ChromaDBSettings.directory_path,
+                data_files_tuples=data_files_tuples,
+                model=selected_model_fr,
+                distance_func="ip", # passed to chromadb's get_or_create_collection method, one of ["l2", "ip", "cosine"]
+                current_language=language
+            )
+        
+            else:
+                main(collection_name=collection_name,
                 db_path=ChromaDBSettings.directory_path,
                 data_files_tuples=data_files_tuples,
                 model=selected_model,
