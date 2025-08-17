@@ -154,7 +154,7 @@ def find_lcs_length(reference_words, candidate_words, is_find_optimal_lcs = Fals
             
         end_pos = positions[end_scores.index(max(end_scores))]
         end_pos_index = positions.index(end_pos)
-        lcs_length = end_pos_index - start_pos_index + 1 # Recalculate the LCS length
+        lcs_length = end_pos_index - start_pos_index + 1
 
     return lcs_length, start_pos, end_pos
 
