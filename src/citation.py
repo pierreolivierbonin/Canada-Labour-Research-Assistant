@@ -235,7 +235,7 @@ def truncate_if_above_max_length(text, max_length):
 # Post processing that should always be applied when markdown is used.
 def markdown_post_processing(text: str) -> str:
     # Replace the dollar signs to fix the markdown
-    return text.replace("$", "\$")
+    return text.replace("$", r"\$")
 
 def fix_links_and_emails(text):
     # Email pattern
@@ -362,7 +362,12 @@ def check_words_in_quote_under_threshold(quote):
     return len([word for word in quote.split()]) < QuotationsConfig.min_words_in_quote
 
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
-def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False):
+def verify_and_attribute_quotes(chunks, 
+                                llm_answer, 
+                                threshold, 
+                                include_html=False, 
+                                include_attribution=False, 
+                                include_complete_sentence=False):
     # Extract regular quotes sections
     quotes = re.findall(r'"([^"]*)"', llm_answer)
     
