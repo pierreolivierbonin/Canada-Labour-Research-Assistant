@@ -2,12 +2,13 @@ from operator import itemgetter
 import random
 import sys
 sys.path.append("./")
-from typing import Callable
+from typing import Callable, List, Literal
 import warnings
 
 import chromadb
 from chromadb.config import Settings
-import pydantic
+from ollama import chat, ChatResponse
+from pydantic import BaseModel, ValidationError, Field, EmailStr
 from scipy import stats
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
@@ -23,6 +24,7 @@ class RAGcorporaConsistencyEvaluator:
                  reference_collection_name:str, 
                  similarity_fn_name:str,
                  ef_construction:int,
+                 client:Callable=chat,
                  cross_encoder:str = "cross-encoder/ms-marco-MiniLM-L6-v2",
                  target_client_path:str="",
                  target_collection_name:str="",
@@ -51,6 +53,7 @@ class RAGcorporaConsistencyEvaluator:
                           The default value is 100. [P-O: has no impact if DB already created]
         '''
         
+        self.client = client
         self.embedding_model_fn = embedding_model_fn
         try:
             self.cross_encoder = CrossEncoder(cross_encoder)
@@ -179,7 +182,93 @@ class RAGcorporaConsistencyEvaluator:
                 print(f"\n{d}")
                     
         return self.results_compiled
+    
+    def call_llm(self, prompt, model='gemma3n:latest'):
+        response = self.client(model=model, 
+                        messages=[
+                            {
+                                'role': 'user',
+                                'content': prompt,
+                            },
+                            ])
+        return response.choices[0].message.content
 
+    def validate_with_model(self, data_model, llm_response):
+        try:
+            validated_data = data_model.model_validate_json(llm_response)
+            print("data validation successful!")
+            print(validated_data.model_dump_json(indent=2))
+            return validated_data, None
+        except ValidationError as e:
+            print(f"error validating data: {e}")
+            error_message = (
+                f"This response generated a validation error: {e}."
+            )
+            return None, error_message
+
+
+    def create_retry_prompt(self, original_prompt, original_response, error_message):
+        retry_prompt = f"""
+        This is a request to fix an error in the structure of an llm_response.
+        Here is the original request:
+        <original_prompt>
+        {original_prompt}
+        </original_prompt>
+
+        Here is the original llm_response:
+        <llm_response>
+        {original_response}
+        </llm_response>
+
+        This response generated an error: 
+        <error_message>
+        {error_message}
+        </error_message>
+
+        Compare the error message and the llm_response and identify what 
+        needs to be fixed or removed
+        in the llm_response to resolve this error. 
+
+        Respond ONLY with valid JSON. Do not include any explanations or 
+        other text or formatting before or after the JSON string.
+        """
+        return retry_prompt
+
+    def validate_llm_response(self, prompt, data_model, n_retry=5, model="gpt-4o"):
+        # Initial LLM call
+        response_content = RAGcorporaConsistencyEvaluator.call_llm(prompt, model=model)
+        current_prompt = prompt
+
+        # Try to validate with the model
+        # attempt: 0=initial, 1=first retry, ...
+        for attempt in range(n_retry + 1):
+
+            validated_data, validation_error = self.validate_with_model(
+                data_model, response_content
+            )
+
+            if validation_error:
+                if attempt < n_retry:
+                    print(f"retry {attempt} of {n_retry} failed, trying again...")
+                else:
+                    print(f"Max retries reached. Last error: {validation_error}")
+                    return None, (
+                        f"Max retries reached. Last error: {validation_error}"
+                    )
+
+                validation_retry_prompt = self.create_retry_prompt(
+                    original_prompt=current_prompt,
+                    original_response=response_content,
+                    error_message=validation_error
+                )
+                response_content = self.call_llm(
+                    validation_retry_prompt, model=model
+                )
+                current_prompt = validation_retry_prompt
+                continue
+
+            # If you get here, both parsing and validation succeeded
+            return validated_data, None
 
 if __name__ == "__main__":
 
@@ -210,16 +299,16 @@ if __name__ == "__main__":
     # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
                                              reference_client_path="./chroma_vectorDB",
-                                             reference_collection_name="all-mpnet-base-v2_labour",
+                                             reference_collection_name="multi-qa-mpnet-base-dot-v1_labour",
                                              target_client_path="./chroma_vectorDB",
-                                             target_collection_name="all-mpnet-base-v2_transport_act_reg",
+                                             target_collection_name="multi-qa-mpnet-base-dot-v1_transport_act_reg",
                                              similarity_fn_name="cosine",   # should be consistent with the function used at creation time
                                              ef_construction=1000,
-                                             top_n=10,
+                                             top_n=3,
                                              random_sample=True,            # set this to False to run on entire collection (ref. or target) 
                                              random_n=5,                    # this will have no effect if random_sample=False
                                              seed=1837,
-                                             verbose=False
+                                             verbose=True
                                              )
     
     # Step 2 - Get cosine distances
@@ -266,7 +355,30 @@ if __name__ == "__main__":
             for hit in results:
                 print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
 
-                # Step 4 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is
+
+                ## Step 4.1 - Define a data model schema and prompt so we can get consistent output format
+
+                # data model schema
+                class ComparisonEvaluator(BaseModel):
+                    category: Literal[
+                        'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
+                        ] = Field(..., description="Evaluation result category")
+                    reason: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus")
+                    summary: str = Field(..., description="A conclusion summarizing the findings")
+                    tags: List[str] = Field(..., description="Relevant keyword tags")
+
+                # prompt
+                example_response_structure = """{{
+                                                category="no overlap",
+                                                reason='''**Reasoning:**
+                                                * **Query:** The query is explicitly asking for "Page details" and a "Date modified: 2013-06-10". This indicates a request for metadata about a document or webpage.
+                                                * **Passage:** The passage presents a table with chemical substances (Hydrogen phosphide, Methyl bromide) and their corresponding TLV (Threshold Limit Values) in ppm and mg/m3. It's a snippet of data, likely from a safety or regulatory document.
+                                                '''
+                                                summary='''The query is looking for information *about* a document, while the passage *is* the content of a document.  They are fundamentally different types of information.  The passage doesn't mention any page details or modification dates.'''
+                                                tags='''metadata, document, webpage, chemical substances, TLV, ppm, safety, regulation'''
+                                            }}"""
+
+                # Step 4.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is
                 system_prompt = '''Please evaluate whether an overlap exists between the following query and passage:\n\n'''
                 response: ChatResponse = chat(model='gemma3n:latest', 
                                             messages=[
