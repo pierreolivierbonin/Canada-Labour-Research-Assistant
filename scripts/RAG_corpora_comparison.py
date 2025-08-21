@@ -2,10 +2,12 @@ from operator import itemgetter
 import random
 import sys
 sys.path.append("./")
+from typing import Callable
 import warnings
 
 import chromadb
 from chromadb.config import Settings
+import pydantic
 from scipy import stats
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
@@ -16,14 +18,14 @@ from db_config import EmbeddingModel, ModelsConfig
 class RAGcorporaConsistencyEvaluator:
 
     def __init__(self, 
-                 embedding_model_fn:callable, 
+                 embedding_model_fn:Callable, 
                  reference_client_path:str, 
                  reference_collection_name:str, 
                  similarity_fn_name:str,
                  ef_construction:int,
                  cross_encoder:str = "cross-encoder/ms-marco-MiniLM-L6-v2",
-                 target_client_path:str=None,
-                 target_collection_name:str=None,
+                 target_client_path:str="",
+                 target_collection_name:str="",
                  top_n:int=50,
                  random_sample=False,
                  random_n=100,
