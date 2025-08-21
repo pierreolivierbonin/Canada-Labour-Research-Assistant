@@ -31,7 +31,7 @@ def call_llm(prompt, client=chat, model='gpt-oss:20b'):
 def validate_with_model(data_model, llm_response):
     try:
         validated_data = data_model.model_validate_json(llm_response)
-        print("data validation successful!")
+        print("\n\nData validation from first attempt!")
         print(validated_data.model_dump_json(indent=2))
         return validated_data, None
     except ValidationError as e:
@@ -71,7 +71,7 @@ other text or formatting before or after the JSON string.
     return retry_prompt
 
 
-def validate_llm_response(
+def rectify_llm_response(
     prompt, data_model, n_retry=5, model='gemma3n:latest'
 ):
     # Initial LLM call
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     new_test3 = '''{"reference_chunk": "test one two test",
     "target_chunk": "test two three test"}'''
-    validated_test = UserInput.model_validate_json(new_test3) # change this to impact everything else below
+    validated_test = UserInput.model_validate_json(new_test) # change this to impact everything else below
 
     # Create prompt with user data and expected JSON structure
     prompt = f"""
@@ -152,11 +152,15 @@ if __name__ == "__main__":
     Respond ONLY with valid JSON. Do not include any explanations or other text or formatting before or after the JSON object or after the curly braces.
     """
 
+    # call the LLM to produce structured output following the data model schema specified above
     response = call_llm(client=chat, prompt=prompt, model="gpt-oss:20b")
-    print(f"\n\n================LLM RESPONSE (initial attempt)===============\n\n{response}")
+    validated_data, error_msg = validate_with_model(data_model=ComparisonEvaluator,llm_response=response)
 
-    validated_data, error = validate_llm_response(prompt=prompt, 
-                                                  data_model=ComparisonEvaluator, 
-                                                  model="gpt-oss:20b",
-                                                  n_retry=5)
-    print(f"\n\nValidated JSON output:\n\n {validated_data}")
+    if validated_data:
+        print(f"\n\nOperation completed.")
+    elif error_msg:
+        validated_data, error = rectify_llm_response(prompt=prompt, 
+                                                    data_model=ComparisonEvaluator, 
+                                                    model="gpt-oss:20b",
+                                                    n_retry=5)
+        print(f"\n\nValidated JSON output:\n\n {error}")
