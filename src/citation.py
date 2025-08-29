@@ -154,7 +154,7 @@ def find_lcs_length(reference_words, candidate_words, is_find_optimal_lcs = Fals
             
         end_pos = positions[end_scores.index(max(end_scores))]
         end_pos_index = positions.index(end_pos)
-        lcs_length = (lcs_length - start_pos_index) - ((lcs_length - start_pos_index) - end_pos_index)
+        lcs_length = end_pos_index - start_pos_index + 1
 
     return lcs_length, start_pos, end_pos
 
@@ -235,7 +235,7 @@ def truncate_if_above_max_length(text, max_length):
 # Post processing that should always be applied when markdown is used.
 def markdown_post_processing(text: str) -> str:
     # Replace the dollar signs to fix the markdown
-    return text.replace("$", "\$")
+    return text.replace("$", r"\$")
 
 def fix_links_and_emails(text):
     # Email pattern
@@ -362,7 +362,12 @@ def check_words_in_quote_under_threshold(quote):
     return len([word for word in quote.split()]) < QuotationsConfig.min_words_in_quote
 
 # Verifies quotes in an LLM answer against source chunks and adds attribution.
-def verify_and_attribute_quotes(chunks, llm_answer, threshold, include_html=False, include_attribution=False, include_complete_sentence=False):
+def verify_and_attribute_quotes(chunks, 
+                                llm_answer, 
+                                threshold, 
+                                include_html=False, 
+                                include_attribution=False, 
+                                include_complete_sentence=False):
     # Extract regular quotes sections
     quotes = re.findall(r'"([^"]*)"', llm_answer)
     
