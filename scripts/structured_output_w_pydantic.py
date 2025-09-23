@@ -7,8 +7,8 @@ from pydantic import BaseModel, ValidationError, Field, model_serializer
 
 class UserInput(BaseModel):
     '''This is the actual data received.'''
-    reference_chunk: str = ""
-    target_chunk: str = ""
+    reference_chunk: str = Field(description="The reference chunk to be compared with other target chunks.")
+    target_chunk: str = Field(description="The target chunk against which to compare the reference chunk. ")
 
 # class used as a reference by the model
 class ComparisonEvaluator(UserInput):
@@ -16,10 +16,10 @@ class ComparisonEvaluator(UserInput):
     # target_chunk: str = Field(..., description="The target chunk with which the refernce is being compared.")
     category: Literal[
         'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
-        ] = Field(..., description="Evaluation result category")
-    reasons: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus")
-    summary: str = Field(..., description="A conclusion summarizing the findings")
-    tags: List[str] = Field(..., description="Relevant keyword tags")
+        ] = Field(..., description="Comparison result category.")
+    reasons: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus.")
+    summary: str = Field(..., description="A conclusion summarizing the findings.")
+    tags: List[str] = Field(..., description="Relevant keywords related to the content of both the reference chunk and target chunk.")
 
     @model_serializer(when_used='json')
     def sort_model(self) -> Dict[str, Any]:
@@ -33,14 +33,15 @@ class ComparisonEvaluator(UserInput):
             "tags": self.tags
         }
 
-def call_llm(prompt, client=chat, model='gpt-oss:20b'):
+def call_llm(prompt, client=chat, model='gpt-oss:20b', hyperparams=None):
     response = client(model=model, 
-                    messages=[
+                      messages=[
                                 {
                                     'role': 'user',
                                     'content': prompt,
                                 },
-                                ])
+                                ],
+                                **hyperparams)
     return response.message.content
 
 def validate_with_model(data_model, llm_response, valid_user_input, verbose=False):
@@ -133,8 +134,6 @@ def rectify_llm_response(
 if __name__ == "__main__":
 
 
-    import json
-
     test_user_data = '''
     {
     "reference_chunk": "Section 247.95 (1) If, during a leave of absence that is taken under this Division, the wages or benefits of the group of employees of which an employee is a member are changed as part of a plan to reorganize the industrial establishment in which that group is employed, the employee is entitled, on reinstatement under this section, to receive the wages and benefits in respect of that employment that that employee would have been entitled to receive had that employee been working when the reorganization took place. Marginal note: Notice of change in wages or benefits (2) The employer of an employee who is on leave and whose wages or benefits would be changed as a result of the reorganization shall, as soon as practicable, send a notice to the employee at their last known address. 2008, c. 15, s. 1 Marginal note: Prohibition — employee Section 247.96 (1) No employer may dismiss, suspend, lay off, demote or discipline an employee because they are a member of the reserve force or intend to take or have taken a leave of absence under this Division or take into account the fact that an employee is a member of the reserve force or intends to take or has taken a leave of absence under this Division in a decision to promote or train them. Marginal note: Prohibition — future employee (2) No person may refuse to employ a person because they are a member of the reserve force. 2008, c. 15, s. 1 Marginal note: Regulations",
@@ -144,15 +143,6 @@ if __name__ == "__main__":
     
     test_validation = UserInput.model_validate_json(test_user_data) # returns the validated Pydantic model if validation was successful
     test_validation.model_dump_json(indent=2)
-
-    # Create a PROMPT TEMPLATE with generic example data to guide LLM.
-    example_response_structure = \
-"""{
-    category="<overlap category between 'high overlap', 'medium overlap', 'low overlap', 'no overlap'>",
-    reasons="<reasoning steps>"
-    summary="<summary>"
-    tags=['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6', 'tag7', 'tag8', 'tag9', 'tag10']
-}"""
     
     # test with a different example of matched passages
     new_test = '''{"reference_chunk": "Section 247.95 (1) If, during a leave of absence that is taken under this Division, the wages or benefits of the group of employees of which an employee is a member are changed as part of a plan to reorganize the industrial establishment in which that group is employed, the employee is entitled, on reinstatement under this section, to receive the wages and benefits in respect of that employment that that employee would have been entitled to receive had that employee been working when the reorganization took place. Marginal note: Notice of change in wages or benefits (2) The employer of an employee who is on leave and whose wages or benefits would be changed as a result of the reorganization shall, as soon as practicable, send a notice to the employee at their last known address. 2008, c. 15, s. 1 Marginal note: Prohibition — employee Section 247.96 (1) No employer may dismiss, suspend, lay off, demote or discipline an employee because they are a member of the reserve force or intend to take or have taken a leave of absence under this Division or take into account the fact that an employee is a member of the reserve force or intends to take or has taken a leave of absence under this Division in a decision to promote or train them. Marginal note: Prohibition — future employee (2) No person may refuse to employ a person because they are a member of the reserve force. 2008, c. 15, s. 1 Marginal note: Regulations",
@@ -167,27 +157,17 @@ if __name__ == "__main__":
     validated_test = UserInput.model_validate_json(new_test2) # change this to impact everything else below
 
     # Create prompt with user data and expected JSON structure
-    prompt = f"""\
-Please analyze and compare these two documents chunks ("reference_chunk" and "target_chunk"):\n {validated_test.model_dump_json(indent=2)} 
-Return your analysis as a JSON object matching the following structure:
-{example_response_structure}
-Do not add anything before or after the curly braces.\
-"""
+    prompt = [
+        {"role":"system",
+         "content": "You are an expert at comparing legal, regulatory, and policy documents. Your task is to accurately compare two documents and extract key information based on the user-provided schema.",
+        },
+        {"role": "user",
+         "content":f"Please compare the following documents:\n\n{validated_test.model_dump_json(indent=2)}"
+        }
+        ]
 
     # call the LLM to produce structured output following the data model schema specified above
-    response = call_llm(client=chat, prompt=prompt, model="gpt-oss:20b")
-    response_dict = json.loads(response.replace("\n    ", ""))
-
-    validated_data, error_msg = validate_with_model(data_model=ComparisonEvaluator,
-                                                    llm_response=response_dict, 
-                                                    valid_user_input=validated_test,
-                                                    verbose=True)
-
-    if validated_data:
-        print(f"\n\nOperation completed.")
-    elif error_msg:
-        validated_data, error = rectify_llm_response(prompt=prompt, 
-                                                    data_model=ComparisonEvaluator, 
-                                                    model="gpt-oss:20b",
-                                                    n_retry=5)
-        print(f"\n\nValidated JSON output:\n\n {error}")
+    print(f"\nRequested output format:\n\n{ComparisonEvaluator.model_json_schema()}")
+    response = chat(model="gemma3n:latest", messages=prompt, format=ComparisonEvaluator.model_json_schema())
+    validated = ComparisonEvaluator.model_validate_json(response.message.content)
+    print(response["message"]["content"])
