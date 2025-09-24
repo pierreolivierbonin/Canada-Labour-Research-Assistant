@@ -400,15 +400,6 @@ if __name__ == "__main__":
                 print(f"\n\nReference chunk is equal to class attribute reference chunk? {final_response.reference_chunk==hit["input"][0]}")
                 print(f"\nTarget chunk is equal to class attribute target chunk? {final_response.target_chunk==hit["input"][1]}")
 
-            # # The keys below will be column names in the .csv file:
-            # "reference_chunk"
-            # "target_chunk"
-            # "cosine_distance"
-            # "cross_encoder_score"
-            # "category"
-            # "reasons"
-            # "tags"
-            
                 writer.writerow([
                     final_response.reference_chunk,
                     final_response.target_chunk,
