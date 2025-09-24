@@ -2,19 +2,50 @@ from operator import itemgetter
 import random
 import sys
 sys.path.append("./")
-from typing import Callable, List, Literal
+from typing import Any, Callable, Dict, List, Literal
 import warnings
 
 import chromadb
 from chromadb.config import Settings
 from ollama import chat, ChatResponse
-from pydantic import BaseModel, ValidationError, Field, EmailStr
+from pydantic import BaseModel, ValidationError, Field, model_serializer
 from scipy import stats
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 
 from db_config import EmbeddingModel, ModelsConfig
 
+
+class UserInput(BaseModel):
+    '''This is the actual data received.'''
+    reference_chunk: str = Field(description="The reference chunk to be compared with other target chunks.")
+    target_chunk: str = Field(description="The target chunk against which to compare the reference chunk. ")
+
+# class used as a reference by the model
+class ComparisonEvaluator(UserInput):
+    # reference_chunk: str = Field(..., description="The reference chunk to compare with target chunks.")
+    # target_chunk: str = Field(..., description="The target chunk with which the refernce is being compared.")
+    category: Literal[
+        'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
+        ] = Field(..., description="Comparison result category.")
+    reasons: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus.")
+    summary: str = Field(..., description="A conclusion summarizing the findings.")
+    tags: List[str] = Field(..., description="Relevant keywords related to the content of both the reference chunk and target chunk.")
+
+    @model_serializer(when_used='json')
+    def sort_model(self) -> Dict[str, Any]:
+        # return dict(sorted(self.model_dump().items()))
+        return {
+            "reference_chunk": self.reference_chunk,
+            "target_chunk": self.target_chunk,
+            "category": self.category,
+            "reasons": self.reasons,
+            "summary": self.summary,
+            "tags": self.tags
+        }
+    class Config:
+        """Extra configuration options"""
+        anystr_strip_whitespace = True  # remove trailing whitespace
 
 class RAGcorporaConsistencyEvaluator:
 
@@ -288,6 +319,7 @@ if __name__ == "__main__":
     import time
 
     from ollama import chat, ChatResponse
+    
     from sentence_transformers import CrossEncoder
 
     from db_config import EmbeddingModel, ModelsConfig
@@ -312,18 +344,22 @@ if __name__ == "__main__":
                                              )
     
     # Step 2 - Get cosine distances
-    results_self_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
+    results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
     print("")
 
-    # Step 3 - Refine by getting cross-encoder scores
-    cross_encoder_scores = []
-    for i in range(len(results_self_consistency)):
-        print(f"\nPreviewing reference document chunk...\n{results_self_consistency[i]["reference"][1][:200]}")
-        for j in range(len(results_self_consistency[0]["target"]["documents"][0])):
-            print(f"\nPreviewing target document chunk...\n{results_self_consistency[0]["target"]["documents"][0][j]}")
-            cross_encoder_scores.append(cross_encoder.predict((results_self_consistency[i]["reference"][1], 
-                                                              results_self_consistency[0]["target"]["documents"][0][j]))
-                                                              )
+    # # Step 3 - Save cosine distances, then refine and save cross-encoder scores
+    # cosine_distances = []
+    # for i in range(len(results_comparative_consistency)):
+    #     cosine_distances.append(results_comparative_consistency[i]["target"]["distances"])
+
+    # cross_encoder_scores = []
+    # for i in range(len(results_comparative_consistency)):
+    #     print(f"\nPreviewing reference document chunk...\n{results_comparative_consistency[i]["reference"][1][:200]}")
+    #     for j in range(len(results_comparative_consistency[0]["target"]["documents"][0])):
+    #         print(f"\nPreviewing target document chunk...\n{results_comparative_consistency[0]["target"]["documents"][0][j]}")
+    #         cross_encoder_scores.append(cross_encoder.predict((results_comparative_consistency[i]["reference"][1], 
+    #                                                           results_comparative_consistency[0]["target"]["documents"][0][j]))
+                                                            #   )
 
     # Step 4 - Save results, ordered by highest to lowest scores
     if not os.path.exists("./overlap_results/"):
@@ -332,22 +368,29 @@ if __name__ == "__main__":
 
     with open("./overlap_results/results.csv", "w",  newline='', encoding="utf-8") as f:
         writer = csv.writer(f, delimiter='|')
-        writer.writerow(["score",
-                         "llm_eval",
-                         "labour_excerpt", 
-                         "transport_canada_excerpt"])
+        writer.writerow([
+            "cosine_distance"
+            "cross_encoder_score",
+            "reference_chunk"
+            "target_chunk"
+            "category"
+            "reasons"
+            "summary"
+            ])
         
-        for i in range(len(results_self_consistency)):
+        for i in range(len(results_comparative_consistency)):
             start_time = time.time()
 
-            query = results_self_consistency[i]["reference"][1]
-            model_inputs = [[query, passage] for passage in results_self_consistency[i]["target"]["documents"][0]]
+            query = results_comparative_consistency[i]["reference"][1]
+            model_inputs = [[query, passage] for passage in results_comparative_consistency[i]["target"]["documents"][0]]
             scores = cross_encoder.predict(model_inputs)
+            cosine_distances = results_comparative_consistency[i]["target"]["distances"][0]
+            # scores = cross_encoder_scores
 
 
 
             # Sort the scores in decreasing order
-            results = [{"input": inp, "score": score} for inp, score in zip(model_inputs, scores)]
+            results = [{"input": inp, "cosine_dist": dist, "score": score} for inp, dist, score in zip(model_inputs, cosine_distances, scores)]
             results = sorted(results, key=lambda x: x["score"], reverse=True)
 
             print("\nQuery:", query[:500]+"(...)")
@@ -356,41 +399,35 @@ if __name__ == "__main__":
                 print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
 
 
-                ## Step 4.1 - Define a data model schema and prompt so we can get consistent output format
+                ## Step 4.1 - Use a defined data model schema and prompt so we can get consistent output format
+                input_dict = {"reference_chunk": hit["input"][0], "target_chunk": hit["input"][1]}
+                validated_input = UserInput.model_validate(input_dict)
 
-                # data model schema
-                class ComparisonEvaluator(BaseModel):
-                    category: Literal[
-                        'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
-                        ] = Field(..., description="Evaluation result category")
-                    reason: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus")
-                    summary: str = Field(..., description="A conclusion summarizing the findings")
-                    tags: List[str] = Field(..., description="Relevant keyword tags")
-
-                # prompt
-                example_response_structure = """{{
-                                                category="no overlap",
-                                                reason='''**Reasoning:**
-                                                * **Query:** The query is explicitly asking for "Page details" and a "Date modified: 2013-06-10". This indicates a request for metadata about a document or webpage.
-                                                * **Passage:** The passage presents a table with chemical substances (Hydrogen phosphide, Methyl bromide) and their corresponding TLV (Threshold Limit Values) in ppm and mg/m3. It's a snippet of data, likely from a safety or regulatory document.
-                                                '''
-                                                summary='''The query is looking for information *about* a document, while the passage *is* the content of a document.  They are fundamentally different types of information.  The passage doesn't mention any page details or modification dates.'''
-                                                tags='''metadata, document, webpage, chemical substances, TLV, ppm, safety, regulation'''
-                                            }}"""
-
-                # Step 4.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is
-                system_prompt = '''Please evaluate whether an overlap exists between the following query and passage:\n\n'''
+                # Step 4.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is using structured output format
+                prompt = [
+                    {"role":"system",
+                    "content": "You are an expert at comparing legal, regulatory, and policy documents. Your task is to accurately compare two documents and extract key information based on the user-provided schema.",
+                    },
+                    {"role": "user",
+                    "content":f"Please compare the following documents:\n\n{validated_input.model_dump_json(indent=2)}"
+                    }
+                    ]
                 response: ChatResponse = chat(model='gemma3n:latest', 
-                                            messages=[
-                                                        {
-                                                            'role': 'user',
-                                                            'content': system_prompt+f"Query:{hit["input"][0]}\n\nPassage:{hit["input"][1]}",
-                                                        },
-                                                        ])
+                                            messages=prompt,
+                                            format=ComparisonEvaluator.model_json_schema())
+                
                 print(f"\n\n================LLM RESPONSE================\n{response.message.content}")
-    
 
-                writer.writerow([hit["score"], 
-                                 response.message.content,
-                                 hit["input"][0],
-                                 hit["input"][1]])
+            # "cosine_distance"
+            # "cross_encoder_score",
+            # "reference_chunk"
+            # "target_chunk"
+            # "category"
+            # "reasons"
+            # "summary"
+            
+                # writer.writerow([hit["cosine_distance"],
+                #     hit["score"], 
+                #                  response.message.content,
+                #                  hit["input"][0],
+                #                  hit["input"][1]])
