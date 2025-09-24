@@ -24,10 +24,11 @@ class UserInput(BaseModel):
 # class used as a reference by the model
 class ComparisonEvaluator(UserInput):
     category: Literal[
-        'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
-        ] = Field(..., description="Comparison result category.")
+        'high overlap', 'some overlap', 'low overlap'
+        ] = Field(..., description="Category describing the extent to which both documents are sharing topics.")
     reasons: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus.")
-    tags: List[str] = Field(..., description="Relevant keywords related to the content of both the reference chunk and target chunk.")
+    keywords_reference_chunk: List[str] = Field(..., description="Relevant keywords related to the content of the reference chunk.")
+    keywords_target_chunk: List[str] = Field(..., description="Relevant keywords related to the content of the target chunk.")
 
     @model_serializer(when_used='json')
     def sort_model(self) -> Dict[str, Any]:
@@ -37,7 +38,8 @@ class ComparisonEvaluator(UserInput):
             "target_chunk": self.target_chunk,
             "category": self.category,
             "reasons": self.reasons,
-            "tags": self.tags
+            "keywords_reference_chunk": self.keywords_reference_chunk,
+            "keywords_target_chunk": self.keywords_target_chunk
         }
     class Config:
         """Extra configuration options"""
@@ -315,13 +317,14 @@ if __name__ == "__main__":
     import time
 
     from ollama import chat, ChatResponse
-    
     from sentence_transformers import CrossEncoder
+    from torch.nn import Sigmoid
 
     from db_config import EmbeddingModel, ModelsConfig
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
-    cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
+    cross_encoder_reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2", default_activation_function = Sigmoid())
+    cross_encoder_duplicate_detector = CrossEncoder("cross-encoder/quora-roberta-large")
 
     # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
@@ -333,7 +336,7 @@ if __name__ == "__main__":
                                              ef_construction=1000,
                                              top_n=3,
                                              random_sample=True,            # set this to False to run on entire collection (ref. or target) 
-                                             random_n=5,                    # this will have no effect if random_sample=False
+                                             random_n=100,                    # this will have no effect if random_sample=False
                                              seed=1837,
                                              verbose=True
                                              )
@@ -346,16 +349,18 @@ if __name__ == "__main__":
         print("Warning: Folder 'overlap_results does not exist. Creating it...")
         os.mkdir("./overlap_results")
 
-    with open("./overlap_results/results.csv", "w",  newline='', encoding="utf-8") as f:
+    with open("./overlap_results/results_reranker_and_duplicate_detector_demo.csv", "w",  newline='', encoding="utf-8") as f:
         writer = csv.writer(f, delimiter='|')
         writer.writerow([
             "reference_chunk",
             "target_chunk",
             "cosine_distance",
-            "cross_encoder_score",
+            "cross_encoder_rerank_score",
+            "cross_encoder_duplicate_score",
             "category",
             "reasons",
-            "keywords"
+            "keywords_reference_chunk",
+            "keywords_target_chunk"
             ])
         
         for i in range(len(results_comparative_consistency)):
@@ -363,17 +368,20 @@ if __name__ == "__main__":
 
             query = results_comparative_consistency[i]["reference"][1]
             model_inputs = [[query, passage] for passage in results_comparative_consistency[i]["target"]["documents"][0]]
-            scores = cross_encoder.predict(model_inputs)
+            reranker_scores = cross_encoder_reranker.predict(model_inputs)
+            duplicate_scores = cross_encoder_duplicate_detector.predict(model_inputs)
             cosine_distances = results_comparative_consistency[i]["target"]["distances"][0]
 
             # Sort the scores in decreasing order
-            results = [{"input": inp, "cosine_dist": dist, "score": score} for inp, dist, score in zip(model_inputs, cosine_distances, scores)]
-            results = sorted(results, key=lambda x: x["score"], reverse=True)
+            results = [{"input": inp, "cosine_dist": dist, "reranker_score": rerank_score, "duplication_score": duplicate_score} 
+                       for inp, dist, rerank_score, duplicate_score 
+                       in zip(model_inputs, cosine_distances, reranker_scores, duplicate_scores)]
+            results = sorted(results, key=lambda x: x["reranker_score"], reverse=True)
 
             print("\nQuery:", query[:500]+"(...)")
             print(f"\nSearch took {time.time() - start_time:.2f} seconds")
             for hit in results:
-                print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
+                print("\nScore: {:.2f}".format(hit["reranker_score"]), "\t", hit["input"][1][:500])
 
 
                 ## Step 3.1 - Use a defined data model schema and prompt so we can get consistent output format
@@ -383,7 +391,8 @@ if __name__ == "__main__":
                 # Step 3.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is using structured output format
                 prompt = [
                     {"role":"system",
-                    "content": "You are an expert at comparing legal, regulatory, and policy documents. Your task is to accurately compare two documents and extract key information based on the user-provided schema.",
+                    "content": "You are an expert at comparing legal, regulatory, and policy documents. "
+                    "Your task is to accurately compare whether two documents share the same topics or not.",
                     },
                     {"role": "user",
                     "content":f"Please compare the following documents:\n\n{validated_input.model_dump_json(indent=2)}"
@@ -404,8 +413,10 @@ if __name__ == "__main__":
                     final_response.reference_chunk,
                     final_response.target_chunk,
                     hit["cosine_dist"],
-                    hit["score"],
+                    hit["reranker_score"],
+                    hit["duplication_score"],
                     final_response.category,
                     final_response.reasons,
-                    final_response.tags
+                    final_response.keywords_reference_chunk,
+                    final_response.keywords_target_chunk
                     ])
