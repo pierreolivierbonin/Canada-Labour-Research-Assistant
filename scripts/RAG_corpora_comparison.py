@@ -23,13 +23,10 @@ class UserInput(BaseModel):
 
 # class used as a reference by the model
 class ComparisonEvaluator(UserInput):
-    # reference_chunk: str = Field(..., description="The reference chunk to compare with target chunks.")
-    # target_chunk: str = Field(..., description="The target chunk with which the refernce is being compared.")
     category: Literal[
         'very high overlap', 'high overlap', 'medium overlap', 'low overlap', 'no overlap'
         ] = Field(..., description="Comparison result category.")
     reasons: str = Field(..., description="Reasoning explaining why, including:\n* query focus\n* passage focus.")
-    summary: str = Field(..., description="A conclusion summarizing the findings.")
     tags: List[str] = Field(..., description="Relevant keywords related to the content of both the reference chunk and target chunk.")
 
     @model_serializer(when_used='json')
@@ -40,7 +37,6 @@ class ComparisonEvaluator(UserInput):
             "target_chunk": self.target_chunk,
             "category": self.category,
             "reasons": self.reasons,
-            "summary": self.summary,
             "tags": self.tags
         }
     class Config:
@@ -326,7 +322,6 @@ if __name__ == "__main__":
 
     selected_model = EmbeddingModel(model_name=ModelsConfig.models["mpnet"], trust_remote_code=True)
     cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L6-v2")
-    # cross_encoder = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L2")
 
     # Step 1 - Retrieve most similar documents based on selected metric
     evaluator = RAGcorporaConsistencyEvaluator(embedding_model_fn=selected_model.model_chroma_callable,
@@ -344,24 +339,9 @@ if __name__ == "__main__":
                                              )
     
     # Step 2 - Get cosine distances
-    results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)
-    print("")
+    results_comparative_consistency = evaluator.find_comparative_consistency_scores(save_to_disk=True)                                                            #   )
 
-    # # Step 3 - Save cosine distances, then refine and save cross-encoder scores
-    # cosine_distances = []
-    # for i in range(len(results_comparative_consistency)):
-    #     cosine_distances.append(results_comparative_consistency[i]["target"]["distances"])
-
-    # cross_encoder_scores = []
-    # for i in range(len(results_comparative_consistency)):
-    #     print(f"\nPreviewing reference document chunk...\n{results_comparative_consistency[i]["reference"][1][:200]}")
-    #     for j in range(len(results_comparative_consistency[0]["target"]["documents"][0])):
-    #         print(f"\nPreviewing target document chunk...\n{results_comparative_consistency[0]["target"]["documents"][0][j]}")
-    #         cross_encoder_scores.append(cross_encoder.predict((results_comparative_consistency[i]["reference"][1], 
-    #                                                           results_comparative_consistency[0]["target"]["documents"][0][j]))
-                                                            #   )
-
-    # Step 4 - Save results, ordered by highest to lowest scores
+    # Step 3 - Save results, ordered by highest to lowest scores
     if not os.path.exists("./overlap_results/"):
         print("Warning: Folder 'overlap_results does not exist. Creating it...")
         os.mkdir("./overlap_results")
@@ -369,13 +349,13 @@ if __name__ == "__main__":
     with open("./overlap_results/results.csv", "w",  newline='', encoding="utf-8") as f:
         writer = csv.writer(f, delimiter='|')
         writer.writerow([
-            "cosine_distance"
+            "reference_chunk",
+            "target_chunk",
+            "cosine_distance",
             "cross_encoder_score",
-            "reference_chunk"
-            "target_chunk"
-            "category"
-            "reasons"
-            "summary"
+            "category",
+            "reasons",
+            "keywords"
             ])
         
         for i in range(len(results_comparative_consistency)):
@@ -385,9 +365,6 @@ if __name__ == "__main__":
             model_inputs = [[query, passage] for passage in results_comparative_consistency[i]["target"]["documents"][0]]
             scores = cross_encoder.predict(model_inputs)
             cosine_distances = results_comparative_consistency[i]["target"]["distances"][0]
-            # scores = cross_encoder_scores
-
-
 
             # Sort the scores in decreasing order
             results = [{"input": inp, "cosine_dist": dist, "score": score} for inp, dist, score in zip(model_inputs, cosine_distances, scores)]
@@ -399,11 +376,11 @@ if __name__ == "__main__":
                 print("\nScore: {:.2f}".format(hit["score"]), "\t", hit["input"][1][:500])
 
 
-                ## Step 4.1 - Use a defined data model schema and prompt so we can get consistent output format
+                ## Step 3.1 - Use a defined data model schema and prompt so we can get consistent output format
                 input_dict = {"reference_chunk": hit["input"][0], "target_chunk": hit["input"][1]}
                 validated_input = UserInput.model_validate(input_dict)
 
-                # Step 4.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is using structured output format
+                # Step 3.2 - Ask an LLM to evaluate whether there is an overlap between passages and, if so, where it is using structured output format
                 prompt = [
                     {"role":"system",
                     "content": "You are an expert at comparing legal, regulatory, and policy documents. Your task is to accurately compare two documents and extract key information based on the user-provided schema.",
@@ -416,18 +393,28 @@ if __name__ == "__main__":
                                             messages=prompt,
                                             format=ComparisonEvaluator.model_json_schema())
                 
-                print(f"\n\n================LLM RESPONSE================\n{response.message.content}")
+                final_response = ComparisonEvaluator.model_validate_json(response.message.content)
+                final_response.reference_chunk = hit["input"][0]
+                final_response.target_chunk = hit["input"][1]
+                print(f"\n\n================LLM RESPONSE================\n{final_response.model_dump_json(indent=2)}")
+                print(f"\n\nReference chunk is equal to class attribute reference chunk? {final_response.reference_chunk==hit["input"][0]}")
+                print(f"\nTarget chunk is equal to class attribute target chunk? {final_response.target_chunk==hit["input"][1]}")
 
-            # "cosine_distance"
-            # "cross_encoder_score",
+            # # The keys below will be column names in the .csv file:
             # "reference_chunk"
             # "target_chunk"
+            # "cosine_distance"
+            # "cross_encoder_score"
             # "category"
             # "reasons"
-            # "summary"
+            # "tags"
             
-                # writer.writerow([hit["cosine_distance"],
-                #     hit["score"], 
-                #                  response.message.content,
-                #                  hit["input"][0],
-                #                  hit["input"][1]])
+                writer.writerow([
+                    final_response.reference_chunk,
+                    final_response.target_chunk,
+                    hit["cosine_dist"],
+                    hit["score"],
+                    final_response.category,
+                    final_response.reasons,
+                    final_response.tags
+                    ])
