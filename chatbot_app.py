@@ -284,7 +284,7 @@ class App:
             page_title=self.translator.get('title'),
             initial_sidebar_state="auto",
             layout="centered",
-            menu_items={"Report a bug": "mailto:pierreolivier.bonin@hrsdc-rhdcc.gc.ca",
+            menu_items={"Report a bug": "https://github.com/pierreolivierbonin/Canada-Labour-Research-Assistant/issues",
                         "About":"Developed by Pierre-Olivier Bonin, Ph.D."}
         )
 

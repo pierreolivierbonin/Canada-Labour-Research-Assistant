@@ -358,7 +358,7 @@ If you draw inspiration or use this solution, please cite the following work:
 
 <!-- CONTACT -->
 ## Contact
-[Pierre-Olivier Bonin](https://www.linkedin.com/in/pierreolivierbonin/), [Marc-André Allard](mailto:marca116@hotmail.com)
+[Pierre-Olivier Bonin](https://www.linkedin.com/in/pierreolivierbonin/), Marc-André Allard
 
 
 
